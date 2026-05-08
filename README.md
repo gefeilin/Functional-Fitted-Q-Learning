@@ -50,6 +50,19 @@ The quickstart uses deliberately tiny episode counts and training iterations so
 it can run quickly. It is a smoke test and tutorial, not a paper-scale
 replication.
 
+## Components
+
+| Component | Path | Purpose |
+| --- | --- | --- |
+| Core package | `src/functional_fitted_q/` | Implements environments, kernels, fitted Q-iteration, fitted Q-evaluation, runners, and visualization helpers. |
+| Configurations | `configs/` | Stores reproducible quickstart and paper-scale parameter settings. |
+| Command-line workflows | `scripts/` | Runs functional FQI/FQE jobs, scalar-action baselines, released-result summaries, and figure/table generation. |
+| Quickstart example | `examples/quickstart_example.py` | Runs a small GPU smoke test with synthetic functional-action data. |
+| Public toy data | `data/example/` | Contains the generated synthetic example transition data used by the quickstart. |
+| Released summaries | `results/` | Contains lightweight public simulation and FQE summaries used to regenerate paper figures and tables. |
+| Documentation | `docs/` | Maps paper results to public code and explains reproducibility details. |
+| Tests | `tests/` | Provides regression and smoke tests for data generation, kernels, algorithms, and quickstart outputs. |
+
 ## Repository Structure
 
 ```text
@@ -100,6 +113,32 @@ Run an optional scalar benchmark:
 python scripts/run_d3rlpy_baseline.py DDPG \
   --horizon 5 --gamma 0.8 --size 100 --iteration 0
 ```
+
+## Key Parameters
+
+The main configuration files are `configs/quickstart.yaml` for a small smoke
+test and `configs/paper_simulation.yaml` for paper-scale simulation settings.
+
+| Parameter | Meaning |
+| --- | --- |
+| `horizon` | Number of decision cycles per simulated trajectory. |
+| `gamma` | Discount factor used by FQI/FQE and Monte Carlo value scoring. |
+| `size` | Number of simulated trajectories or subjects in the training dataset. |
+| `iteration` | Batch index used for seeding and output naming. |
+| `run_tag` | Label used to organize saved models and result directories. |
+| `num_action_grid_points` | Number of grid points used to represent each functional action. |
+| `num_basis_knots` | Number of knots used to construct the B-spline action basis. |
+| `spline_degree` | Degree of the B-spline basis for functional action optimization. |
+| `lambda_grid_size`, `lambda_min`, `lambda_max` | Grid used to select the spline smoothness penalty by cross-validation. |
+| `num_cv_splits` | Number of cross-validation folds for penalty selection. |
+| `fqi_iterations` | Number of fitted Q-iteration updates. |
+| `training_iterations` | Maximum optimization iterations for GCV and policy optimization subproblems. |
+| `fqe_simulations`, `fqe_cycles` | Monte Carlo settings used when scoring learned policies. |
+| `fqe_eval_states` | Number of initial states used for FQE value summaries. |
+| `fqe_train_expectation_samples`, `fqe_eval_expectation_samples` | Number of policy-action samples used for FQE expectation estimates. |
+| `fqe_clamp_targets` | Whether FQE targets are clamped to the configured value bounds. |
+| `learning_rate` | Optimizer learning rate for GCV and policy optimization. |
+| `early_stopping_patience`, `early_stopping_delta` | Early-stopping controls for iterative optimization. |
 
 ## Data
 
