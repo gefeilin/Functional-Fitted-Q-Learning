@@ -7,8 +7,8 @@ This public release is centered on reproducible simulations and synthetic exampl
 ## Installation
 
 ```bash
-git clone <repository-url>
-cd Functional-Fitted-Q-GitHub-Release
+git clone https://github.com/gefeilin/Functional-Fitted-Q-Learning.git
+cd Functional-Fitted-Q-Learning
 
 conda env create -f environment.yml
 conda activate functional-fitted-q
