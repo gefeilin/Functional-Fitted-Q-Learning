@@ -2,12 +2,15 @@
 
 Companion code for a paper on offline reinforcement learning with functional actions. The method represents each action as a function over a grid, estimates Q-functions with kernel ridge regression, and performs fitted Q-evaluation and fitted Q-iteration in the functional-action setting.
 
-This public release is centered on reproducible simulations and synthetic examples. Restricted real-data materials are not included.
+This anonymized review release contains the implementation, configuration files,
+synthetic examples, lightweight released simulation summaries, and documentation
+needed to regenerate the public figures and tables. Restricted real-data
+materials are not included.
 
 ## Installation
 
 ```bash
-git clone https://github.com/gefeilin/Functional-Fitted-Q-Learning.git
+git clone <anonymous-review-repository-url>
 cd Functional-Fitted-Q-Learning
 
 conda env create -f environment.yml
