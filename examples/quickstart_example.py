@@ -42,7 +42,6 @@ def serialize_dataset(dataset: pd.DataFrame) -> list[dict]:
 def main() -> None:
     np.random.seed(123)
     torch.manual_seed(123)
-    device = torch.device("cpu")
 
     config = ExperimentConfig(
         horizon=2,
@@ -52,13 +51,18 @@ def main() -> None:
         run_tag="quickstart",
         num_basis_knots=6,
         spline_degree=3,
-        num_action_grid_points=20,
         fqi_iterations=1,
         training_iterations=5,
         learning_rate=0.02,
         early_stopping_patience=2,
         early_stopping_delta=1e-4,
     )
+    if not torch.cuda.is_available():
+        raise RuntimeError("Quickstart requires a CUDA-capable PyTorch install.")
+    gpu_index = config.gpu_id % torch.cuda.device_count()
+    torch.cuda.set_device(gpu_index)
+    torch.cuda.manual_seed_all(123)
+    device = torch.device(f"cuda:{gpu_index}")
 
     output_dir = REPO_ROOT / "outputs" / "quickstart"
     data_dir = REPO_ROOT / "data" / "example"
@@ -104,7 +108,12 @@ def main() -> None:
         gcv_max_iterations=config.training_iterations,
     )
     fqe.update_q_function()
-    value_estimates = fqe.predict(initial_states, torch.tensor(learned_actions, dtype=torch.float32)).detach().cpu().numpy()
+    value_estimates = (
+        fqe.predict(initial_states, torch.tensor(learned_actions, dtype=torch.float32, device=device))
+        .detach()
+        .cpu()
+        .numpy()
+    )
 
     summary = pd.DataFrame(
         [
@@ -113,6 +122,8 @@ def main() -> None:
                 "n_subjects": dataset["Subject"].nunique(),
                 "horizon": config.horizon,
                 "gamma": config.gamma,
+                "num_action_grid_points": config.num_action_grid_points,
+                "device": str(device),
                 "mean_reward": float(dataset["Reward"].mean()),
                 "mean_initial_fqe_value": float(value_estimates.mean()),
             }

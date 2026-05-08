@@ -17,7 +17,7 @@ dependencies = [
   "pandas",
   "scipy",
   "scikit-learn",
-  "torch",
+  "torch>=2.0,<2.6",
   "gym",
   "filelock",
   "tqdm",

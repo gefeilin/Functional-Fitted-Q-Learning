@@ -5,7 +5,7 @@ iteration: 0
 run_tag: quickstart
 num_basis_knots: 6
 spline_degree: 3
-num_action_grid_points: 20
+num_action_grid_points: 100
 lambda_grid_size: 2
 lambda_min: 0.0001
 lambda_max: 0.001

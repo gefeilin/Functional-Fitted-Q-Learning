@@ -32,7 +32,9 @@ pip install -e ".[benchmarks]"
 
 ## Quick Start
 
-Run a small synthetic example from the repository root:
+Run a small synthetic example from the repository root. The quickstart uses the
+default 100-point functional-action grid and requires a CUDA-capable PyTorch
+install:
 
 ```bash
 python examples/quickstart_example.py
@@ -44,7 +46,9 @@ This creates:
 - `outputs/quickstart/quickstart_summary.csv`
 - `outputs/quickstart/learned_toy_actions.png`
 
-The quickstart uses deliberately tiny hyperparameters so it can run quickly. It is a smoke test and tutorial, not a paper-scale replication.
+The quickstart uses deliberately tiny episode counts and training iterations so
+it can run quickly. It is a smoke test and tutorial, not a paper-scale
+replication.
 
 ## Repository Structure
 
@@ -116,6 +120,7 @@ The tests check toy data generation, basis construction, kernel ridge regression
 ## Troubleshooting
 
 - If `gym` emits a deprecation warning, the simulations can still run; the code preserves the original paper environment.
+- On V100-class GPUs, install a PyTorch release below 2.6; newer wheels may not include kernels for compute capability 7.0.
 - If benchmark imports fail, install the optional benchmark dependencies.
 - If a paper-scale run is slow, reduce `training_iterations`, `fqi_iterations`, or sample size for a diagnostic run, then restore the paper config.
 - Generated outputs are written under `outputs/` and ignored by git.

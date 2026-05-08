@@ -13,6 +13,7 @@ htmlcov/
 .env
 .env.*
 .venv/
+.venv-*/
 venv/
 env/
 ENV/

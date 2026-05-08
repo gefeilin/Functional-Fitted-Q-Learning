@@ -36,10 +36,19 @@ def build_bspline_basis(config: ExperimentConfig, device: torch.device) -> tuple
     return basis_tensor, penalty_tensor
 
 
-def sample_policy_actions(states, num_samples: int, device: torch.device, desc: str) -> torch.Tensor:
+def sample_policy_actions(
+    states,
+    num_samples: int,
+    device: torch.device,
+    desc: str,
+    x_length: int = 100,
+) -> torch.Tensor:
+    x_index = np.linspace(0, 1, x_length)
     sampled_actions = []
     for state in tqdm(states, desc=desc, unit="state"):
-        sampled_actions.append(np.stack([generate_action(state) for _ in range(num_samples)]))
+        sampled_actions.append(
+            np.stack([generate_action(state, x_index=x_index) for _ in range(num_samples)])
+        )
     return torch.tensor(np.stack(sampled_actions), dtype=torch.float32, device=device)
 
 
@@ -61,11 +70,12 @@ def get_or_compute_fqe_ground_truth(
                 return value
 
         logger.info("Computing ground truth for gamma=%s with 1000 simulations and 20 cycles", gamma)
+        x_index = np.linspace(0, 1, x_length)
         value = monte_carlo_policy_value_score(
             sim_num=1000,
             cycle_num=20,
             x_length=x_length,
-            policy=generate_action,
+            policy=lambda state: generate_action(state, x_index=x_index),
             discount=discount,
         )
         ground_truth_file.write_text(f"{value:.12f}\n")
@@ -100,7 +110,11 @@ def run_experiment(config: ExperimentConfig, base_dir: Path) -> None:
         current_device = torch.device("cpu")
 
     basis_tensor, penalty_tensor = build_bspline_basis(config, current_device)
-    dataset = Pendulum_data_generator(config.size, config.horizon, config.num_data_subjects)
+    dataset = Pendulum_data_generator(
+        episode_num=config.size,
+        cycle_num=config.horizon,
+        x_length=config.num_action_grid_points,
+    )
 
     lambda_grid = np.logspace(
         np.log10(config.lambda_min),
@@ -243,6 +257,7 @@ def run_fqe_simulation(config: ExperimentConfig, base_dir: Path) -> None:
 
     train_expectation_samples = config.fqe_train_expectation_samples
     eval_expectation_samples = config.fqe_eval_expectation_samples
+    policy_x_index = np.linspace(0, 1, x_length)
     dataset = Pendulum_data_generator(
         episode_num=config.size,
         cycle_num=config.horizon,
@@ -253,6 +268,7 @@ def run_fqe_simulation(config: ExperimentConfig, base_dir: Path) -> None:
         num_samples=train_expectation_samples,
         device=current_device,
         desc=f"Sampling train actions (n={train_expectation_samples})",
+        x_length=x_length,
     )
 
     fqe = Fitted_q_evaluation(
@@ -263,7 +279,12 @@ def run_fqe_simulation(config: ExperimentConfig, base_dir: Path) -> None:
         policy=lambda state_batch: torch.tensor(
             np.stack(
                 [
-                    np.stack([generate_action(state) for _ in range(train_expectation_samples)])
+                    np.stack(
+                        [
+                            generate_action(state, x_index=policy_x_index)
+                            for _ in range(train_expectation_samples)
+                        ]
+                    )
                     for state in state_batch.detach().cpu().numpy()
                 ]
             ),
@@ -287,6 +308,7 @@ def run_fqe_simulation(config: ExperimentConfig, base_dir: Path) -> None:
         num_samples=eval_expectation_samples,
         device=current_device,
         desc=f"Sampling eval actions (n={eval_expectation_samples})",
+        x_length=x_length,
     )
     predicted_values = fqe.predict(eval_state_tensor, eval_action_tensor).detach().cpu().numpy().reshape(-1)
     estimate = float(np.mean(predicted_values))
