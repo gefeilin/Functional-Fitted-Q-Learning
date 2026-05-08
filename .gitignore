@@ -121,7 +121,7 @@ slurm-*
 data/raw/
 data/processed/
 outputs/
-results/
+#results/
 checkpoints/
 *.pkl
 *.rds

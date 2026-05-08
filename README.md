@@ -1,6 +1,6 @@
 # Functional-Action Fitted Q-Learning
 
-Companion code for a statistical methods paper on offline reinforcement learning with functional actions. The method represents each action as a function over a grid, estimates Q-functions with kernel ridge regression, and performs fitted Q-evaluation and fitted Q-iteration in the functional-action setting.
+Companion code for a paper on offline reinforcement learning with functional actions. The method represents each action as a function over a grid, estimates Q-functions with kernel ridge regression, and performs fitted Q-evaluation and fitted Q-iteration in the functional-action setting.
 
 This public release is centered on reproducible simulations and synthetic examples. Restricted real-data materials are not included.
 
