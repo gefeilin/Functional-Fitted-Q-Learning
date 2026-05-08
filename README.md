@@ -10,9 +10,6 @@ materials are not included.
 ## Installation
 
 ```bash
-# Clone from the anonymous review URL supplied by the review system,
-# or download and unpack the anonymized review archive.
-git clone <anonymous-review-repository-url>
 cd Functional-Fitted-Q-Learning
 
 conda env create -f environment.yml
