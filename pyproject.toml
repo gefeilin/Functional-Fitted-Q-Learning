@@ -1,0 +1,37 @@
+[build-system]
+requires = ["setuptools>=64", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "functional-fitted-q"
+version = "0.1.0"
+description = "Functional-action fitted Q-learning and fitted Q-evaluation simulation code."
+readme = "README.md"
+requires-python = ">=3.10"
+license = {text = "MIT"}
+authors = [
+  {name = "Anonymous authors"}
+]
+dependencies = [
+  "numpy",
+  "pandas",
+  "scipy",
+  "scikit-learn",
+  "torch",
+  "gym",
+  "filelock",
+  "tqdm",
+  "PyYAML",
+  "matplotlib",
+]
+
+[project.optional-dependencies]
+benchmarks = ["d3rlpy"]
+test = ["pytest", "tabulate"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]

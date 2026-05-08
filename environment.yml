@@ -1,0 +1,22 @@
+name: functional-fitted-q
+channels:
+  - conda-forge
+  - pytorch
+dependencies:
+  - python=3.10
+  - numpy
+  - pandas
+  - scipy
+  - scikit-learn
+  - pytorch
+  - matplotlib
+  - pyyaml
+  - tqdm
+  - pytest
+  - tabulate
+  - pip
+  - pip:
+      - gym
+      - filelock
+      # Optional for scalar-action benchmark reproduction:
+      # - d3rlpy

@@ -1,0 +1,15 @@
+numpy
+pandas
+scipy
+scikit-learn
+torch
+gym
+filelock
+tqdm
+PyYAML
+matplotlib
+tabulate
+pytest
+
+# Optional, only for scalar-action benchmark reproduction:
+# d3rlpy
