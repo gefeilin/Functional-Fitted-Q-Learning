@@ -1,0 +1,92 @@
+[
+  {
+    "artifact_id": "main_value",
+    "generated_output": "outputs/figures/main_value.pdf",
+    "generator": "python scripts/generate_simulation_figures.py",
+    "kind": "figure",
+    "label": "fig:main-sample-behavior",
+    "model_or_checkpoint": "M20 policy",
+    "scope": "main",
+    "source_document": "Main text: experiments",
+    "source_inputs": [
+      "results/source/tuning_candidate_values.csv",
+      "results/source/reporting_values.csv",
+      "results/source/constant_returns.csv"
+    ],
+    "notebook": "examples/paper_results.ipynb"
+  },
+  {
+    "artifact_id": "main_identification",
+    "generated_output": "outputs/figures/main_identification.pdf",
+    "generator": "python scripts/generate_simulation_figures.py",
+    "kind": "figure",
+    "label": "fig:main-spectral-diagnostic",
+    "model_or_checkpoint": "Q19/Q20",
+    "scope": "main",
+    "source_document": "Main text: experiments",
+    "source_inputs": [
+      "results/source/identification_query_metrics.parquet",
+      "results/source/identification_secant_metrics.parquet"
+    ],
+    "notebook": "examples/paper_results.ipynb"
+  },
+  {
+    "artifact_id": "krr_value",
+    "generated_output": "outputs/figures/krr_value.pdf",
+    "generator": "python scripts/generate_simulation_figures.py",
+    "kind": "figure",
+    "label": "fig:krr-sample-value",
+    "model_or_checkpoint": "M20 policy",
+    "scope": "appendix",
+    "source_document": "Appendix: experimental details",
+    "source_inputs": [
+      "results/source/tuning_candidate_values.csv",
+      "results/source/reporting_values.csv"
+    ],
+    "notebook": "examples/paper_results.ipynb"
+  },
+  {
+    "artifact_id": "paired_value_difference",
+    "generated_output": "outputs/figures/paired_value_difference.pdf",
+    "generator": "python scripts/generate_simulation_figures.py",
+    "kind": "figure",
+    "label": "fig:paired-return-difference",
+    "model_or_checkpoint": "M20 policy",
+    "scope": "appendix",
+    "source_document": "Appendix: experimental details",
+    "source_inputs": [
+      "results/source/reporting_values.csv",
+      "results/source/constant_returns.csv"
+    ],
+    "notebook": "examples/paper_results.ipynb"
+  },
+  {
+    "artifact_id": "krr_identification",
+    "generated_output": "outputs/figures/krr_identification.pdf",
+    "generator": "python scripts/generate_simulation_figures.py",
+    "kind": "figure",
+    "label": "fig:krr-policy-action-diagnostics",
+    "model_or_checkpoint": "Q19/Q20",
+    "scope": "appendix",
+    "source_document": "Appendix: experimental details",
+    "source_inputs": [
+      "results/source/identification_query_metrics.parquet",
+      "results/source/identification_secant_metrics.parquet"
+    ],
+    "notebook": "examples/paper_results.ipynb"
+  },
+  {
+    "artifact_id": "critic_update_energies",
+    "generated_output": "outputs/figures/critic_update_energies.pdf",
+    "generator": "python scripts/generate_simulation_figures.py",
+    "kind": "figure",
+    "label": "fig:absolute-critic-energies",
+    "model_or_checkpoint": "Q19/Q20",
+    "scope": "appendix",
+    "source_document": "Appendix: experimental details",
+    "source_inputs": [
+      "results/source/identification_secant_metrics.parquet"
+    ],
+    "notebook": "examples/paper_results.ipynb"
+  }
+]

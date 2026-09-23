@@ -1,15 +1,42 @@
 # Examples
 
-`quickstart_example.py` runs a complete synthetic workflow:
-
-1. Generate a tiny functional-action pendulum dataset.
-2. Build a B-spline basis for functional actions.
-3. Fit a functional fitted Q-iteration model.
-4. Evaluate the learned policy with functional fitted Q-evaluation.
-5. Save a toy transition dataset, a summary CSV, and a learned-action figure.
-
-Run from the repository root:
+## Quick Start
 
 ```bash
 python examples/quickstart_example.py
 ```
+
+This CPU example generates 30 transitions, fits two small AdaFNN FQI iterations,
+and evaluates the learned functional policy. PyTorch is required. Settings are
+in `configs/quickstart.yaml`; the paper configuration is separate.
+
+Outputs:
+
+- `data/example/toy_pendulum_transitions.json`: states, functional actions on a
+  shared grid, rewards, next states, subject identifiers, time indices, and
+  terminal indicators (always false for this continuing MDP).
+- `outputs/quickstart/quickstart_summary.csv`: dataset and evaluation summary.
+- `outputs/quickstart/learned_toy_actions.png`: example learned torque functions.
+
+The reduced integration grid, network sizes, and optimization budgets make this
+a tutorial, not a paper-scale replication. Its sample sizes and evaluation
+horizon differ from the paper.
+
+## Paper Analysis Notebook
+
+`paper_results.ipynb` explains coefficient selection, bootstrap intervals, action
+locality, and adjacent-critic energy ratios using the supplied simulation results.
+Execute it with:
+
+```bash
+python scripts/run_notebook.py
+```
+
+The notebook requires the analysis environment, not PyTorch or CUDA. Full
+experiment commands are in [the reproduction guide](../docs/reproducibility.md).
+
+## Slurm Submission
+
+`slurm/functional_fqi.sbatch` is a single-GPU example for one functional FQI task.
+It accepts the approximator (`adafnn` or `krr`) and task index as arguments.
+See [the submission instructions](../docs/slurm.md) for prerequisites and usage.

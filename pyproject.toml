@@ -1,37 +1,25 @@
 [build-system]
-requires = ["setuptools>=64", "wheel"]
+requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "functional-fitted-q"
-version = "0.1.0"
-description = "Functional-action fitted Q-learning and fitted Q-evaluation simulation code."
+name = "functional-fitted-q-theory"
+version = "1.2.0"
+description = "Functional fitted Q-iteration: Pendulum experiments and paper reproduction"
 readme = "README.md"
-requires-python = ">=3.10"
-license = {text = "MIT"}
-authors = [
-  {name = "Anonymous authors"}
-]
-dependencies = [
-  "numpy",
-  "pandas",
-  "scipy",
-  "scikit-learn",
-  "torch>=2.0,<2.6",
-  "gym",
-  "filelock",
-  "tqdm",
-  "PyYAML",
-  "matplotlib",
-]
+license = { file = "LICENSE" }
+requires-python = ">=3.11,<3.13"
+dependencies = ["numpy==1.26.4", "scipy==1.14.1", "pandas==2.2.3", "pyarrow==17.0.0", "PyYAML==6.0.2", "matplotlib==3.9.2", "Pillow==12.3.0"]
 
 [project.optional-dependencies]
-benchmarks = ["d3rlpy"]
-test = ["pytest", "tabulate"]
+training = ["torch==2.5.1"]
+tracking = ["wandb==0.17.9"]
+validation = ["pypdfium2", "Pillow"]
+notebooks = ["nbformat==5.10.4", "nbclient==0.10.2", "ipykernel==6.29.5"]
+
+[project.scripts]
+ffqi = "functional_fitted_q.cli:main"
+functional-fqi = "functional_fitted_q.cli:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
-
-[tool.pytest.ini_options]
-testpaths = ["tests"]
-pythonpath = ["src"]

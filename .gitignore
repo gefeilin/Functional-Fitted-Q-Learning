@@ -1,136 +1,14 @@
-# Python
 __pycache__/
 *.py[cod]
-*.pyo
-.pytest_cache/
-.mypy_cache/
-.ruff_cache/
-.ipynb_checkpoints/
-.coverage
-htmlcov/
-
-# Local environments
-.env
-.env.*
-.venv/
-.venv-*/
-venv/
-env/
-ENV/
 *.egg-info/
-pip-wheel-metadata/
-
-# Private or raw data
-data/raw/
-data/private/
-data/processed_private/
-data/restricted/
-data/*_private/
-data/*_raw/
-
-# Generated outputs and large models
-outputs/**
-!outputs/README.md
-results/raw/
-results/intermediate/
-results/generated/
-logs/
-slurm_logs/
-**/slurm_logs/
-**/d3rlpy_logs/
-**/saved_models/
-**/simulation_results_test/
-**/checkpoints/
-checkpoint*/
-wandb/
-*.pt
-*.pth
-*.d3
-*.lock
-
-# Credentials and local secrets
-*.pem
-*.key
-*.crt
-id_rsa*
-id_dsa*
-credentials*
-secrets*
-
-# Temporary files
-*.tmp
-*.temp
-*.bak
-*.swp
-*.swo
-*~
-*_old.*
-*_backup.*
-
-# Cluster job files
-slurm-*
-*.err
-
-# Manuscript and review drafts
-manuscript*/
-paper_drafts/
-review*/
-response*/
-*.aux
-*.bbl
-*.blg
-*.dvi
-*.log
-*.out
-*.synctex.gz
-
-# OS and IDE files
-.DS_Store
-.vscode/
-.idea/
-
-# R/local analysis state
-.Rhistory
-.RData
-.Rproj.user/
-
-# system
-.DS_Store
-
-# Python
-__pycache__/
-*.py[cod]
-.pytest_cache/
-.ipynb_checkpoints/
-
-# R
-.Rhistory
-.RData
-.Rproj.user/
-
-# local env
-.env
+build/
 .venv/
-venv/
-*.log
-*.out
-*.err
-slurm-*
-
-# private or generated data
-data/raw/
-data/processed/
+.cache/
 outputs/
-#results/
-checkpoints/
-*.pkl
-*.rds
-*.RData
-*.h5
-*.pt
-*.pth
-
-# drafts/private docs
-manuscript/
-reviewer_response/
-private/
+runs/
+data/*
+!data/README.md
+slurm-*.out
+wandb/
+*.key
+*key.md

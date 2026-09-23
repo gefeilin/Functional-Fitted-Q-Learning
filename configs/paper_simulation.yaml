@@ -1,24 +1,175 @@
-horizon: 5
-gamma: 0.8
-size: 100
-iteration: 0
-run_tag: "20250719"
-num_basis_knots: 20
-spline_degree: 5
-num_action_grid_points: 100
-lambda_grid_size: 10
-lambda_min: 0.00001
-lambda_max: 0.1
-num_data_subjects: 100
-num_cv_splits: 3
-fqi_iterations: 10
-training_iterations: 2000
-fqe_simulations: 1000
-fqe_cycles: 20
-fqe_eval_states: 100
-fqe_train_expectation_samples: 1000
-fqe_eval_expectation_samples: 1000
-fqe_clamp_targets: true
-learning_rate: 0.01
-early_stopping_patience: 50
-early_stopping_delta: 0.0001
+schema_version: 1
+design_id: functional_pendulum_oracle_lambda_rate_identification_v1
+classification: outcome_informed_simulation_oracle_lambda_selection
+status: paper_reproduction
+publication_role: main_sample_size_coverage_identification_and_fixed_n_lambda_panel
+scope:
+  approximators:
+  - adafnn
+  - nystrom_krr
+  method: functional_ffqi
+  sample_sizes:
+  - 2000
+  - 4000
+  - 8000
+  - 16000
+  - 32000
+  n_subjects:
+  - 100
+  - 200
+  - 400
+  - 800
+  - 1600
+  t_per_subject: 20
+  fixed_lambda_sweep_sample_size: 8000
+  step_gp_amplitude: 0.35
+  basis_dimension: 12
+  seeds:
+  - 0
+  - 1
+  - 2
+  - 3
+  - 4
+  - 5
+  - 6
+  - 7
+  - 8
+  - 9
+  - 10
+  - 11
+  - 12
+  - 13
+  - 14
+  - 15
+  - 16
+  - 17
+  - 18
+  - 19
+  positive_dimensionless_policy_lambdas:
+  - 0.0001
+  - 0.001
+  - 0.01
+  - 0.1
+  - 1.0
+  lambda_zero_required: false
+  constant_action_required: true
+  constant_action_approximators:
+  - adafnn
+ffqi:
+  gamma: 0.95
+  max_iterations: 20
+  retained_full_checkpoints:
+  - 19
+  - 20
+  maximum_full_checkpoints_per_run: 2
+  maximum_segment_checkpoints_per_run: 1
+  resume_checkpoint_interval_seconds: 60
+  q_scale: 20.0
+  q_scale_rule: one_over_one_minus_gamma
+  omega_scale_rule: four_K_times_lambda_max_exact_bspline_curvature
+  policy_penalty_convention: theory_uncentered_total_curvature_dimensionless_fixed_sieve_bound_v1
+  policy_penalty_estimand: uncentered_all_training_next_state_average_exact_integrated_squared_second_derivative
+monte_carlo:
+  tuning:
+    episodes: 1000
+    horizon: 100
+    seed_namespace: oracle_lambda_tuning_v1
+    common_random_numbers_across_lambdas_and_approximators: true
+    purpose: select_one_lambda_per_approximator_sample_size_seed
+  reporting:
+    episodes: 1000
+    horizon: 100
+    seed_namespace: oracle_lambda_reporting_v1
+    common_random_numbers_across_lambdas_and_approximators: true
+    independent_of_tuning_stream: true
+  selection:
+    score: mean_normalized_discounted_return
+    maximize: true
+    exact_tie_break: smaller_positive_lambda
+    label: simulation_oracle_monte_carlo_selection
+    selected_policy_count: 200
+krr:
+  critic_ridge_selection: subject_grouped_5fold_cv_each_fqi_iteration
+  critic_ridge_return_used: false
+  state_lengthscales:
+  - 1.0
+  - 1.0
+  - 2.0
+  action_lengthscale: training_action_median_quadrature_weighted_functional_l2
+  action_median_max_in_memory_pairs: 2000000
+  grouped_cv:
+    folds: 5
+    fold_seed: 200000
+    log10_min: -12
+    log10_max: 4
+    grid_points: 81
+    split_unit: subject_id
+    target_frozen_within_iteration: true
+    prediction_clipping: false
+    score: mean_subject_unclipped_squared_prediction_error
+  jitter: 1.0e-10
+  eigenvalue_relative_tolerance: 1.0e-12
+  prediction_block_size: 512
+  landmark_rank_rule: min(n, 256 * ceil(2 * (n / 2000)^(log(3) / log(5))))
+  landmark_rank_by_n:
+    2000: 512
+    4000: 1024
+    8000: 1536
+    16000: 2304
+    32000: 3584
+  q_objective_state_count_rule: min_n_twice_landmark_rank
+  q_objective_state_count_by_n:
+    2000: 1024
+    4000: 2048
+    8000: 3072
+    16000: 4608
+    32000: 7168
+  dtype: float64
+adafnn:
+  parent_config: configs/adafnn.yaml
+  critic_architecture: inherit_exactly_from_parent
+  critic_early_stopping_required: true
+  deterministic_cuda: true
+identification:
+  checkpoint_pair:
+  - 19
+  - 20
+  sample_size_panel: selected_lambda_only
+  fixed_n_lambda_panel: all_five_positive_lambdas
+  heldout_seed_namespace: oracle_identification_queries_v1
+  heldout_subjects: 32
+  heldout_decisions: 17
+  retained_time_indices:
+  - 1
+  - 16
+  split_a_subjects: 16
+  paper_split: B
+  state_neighbor_count: 32
+  action_l2_radii:
+  - 0.1
+  - 0.25
+  - 0.5
+  - 1.0
+  query_classes:
+  - learned
+  - previous
+  - behavior
+  - reference
+  metrics:
+  - state_matched_action_distance
+  - fixed_radius_behavior_mass
+  - feature_covariance_spectrum
+  - range_residual
+  - ridge_leverage
+  - adjacent_critic_secant_graph_design_ratio
+  - regularized_inequality_slack
+execution:
+  cpu_threads_per_task: 8
+  memory_per_task_gb: 64
+  tracking: optional_offline
+counts:
+  candidate_training_fits: 1000
+  tuning_mc_evaluations: 1000
+  unique_reporting_mc_evaluations: 360
+  lambda_selection_cells: 200
+  unique_identification_analyses: 360

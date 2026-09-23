@@ -1,0 +1,30 @@
+beta:
+- - 0.742275697542114
+  - -0.20131188475927056
+  - -2.1644564823719183
+  - -0.9467706925360508
+  - -0.08619649954336303
+- - -0.03421098062248025
+  - -0.45798008527740214
+  - 0.22364583239576052
+  - -0.47494438664414396
+  - -0.1140448396369682
+- - 0.10827243057079976
+  - -0.7423235224163097
+  - -0.13918794608670235
+  - 0.17698807697674634
+  - -0.39222229823836346
+calibration_master_seeds:
+- 200
+- 201
+- 202
+- 203
+- 204
+family: smooth_state_dependent_fourier_in_u
+final_seed_overlap: false
+objective_best: 0.6706909765368608
+optimizer: derivative_free_cem
+optimizer_generations: 20
+optimizer_population: 32
+per_seed_refit: false
+schema_version: 1

@@ -1,0 +1,36 @@
+critic:
+  batch_size: 256
+  early_stopping_min_delta: 1.0e-05
+  early_stopping_patience: 30
+  gradient_clip: 10.0
+  max_epochs: 300
+  micro_hidden_layers:
+  - 32
+  - 32
+  outer_hidden_layers:
+  - 256
+  - 256
+  - 256
+  quadrature_resolution_default: 128
+  require_early_stopping_convergence: true
+  weight_decay: 1.0e-05
+selected:
+  adaptive_basis_nodes: 4
+  cma_max_objective_evals: 2500
+  critic_learning_rate: 0.0003
+  lambda_roughness: 0.0
+  parameter_bound: 1.0
+policy:
+  candidate_batch_size: 8
+  cma_initial_sigma: 0.5
+  cma_minimum_sigma: 1.0e-05
+  cma_population_size: 64
+  cma_restarts: 3
+  degree: 3
+  family: bounded_tanh_state_dependent_cubic_bspline
+  k_default: 12
+  objective_state_count: 2048
+gamma: 0.95
+checkpoint_retention:
+  maximum_full_checkpoints_per_run: 2
+  maximum_segment_checkpoints_per_run: 1

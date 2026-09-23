@@ -1,22 +1,20 @@
-name: functional-fitted-q
-channels:
-  - conda-forge
-  - pytorch
+name: functional-fitted-q-theory
+channels: [conda-forge]
 dependencies:
-  - python=3.10
-  - numpy
-  - pandas
-  - scipy
-  - scikit-learn
-  - pytorch<2.6
-  - matplotlib
-  - pyyaml
-  - tqdm
-  - pytest
-  - tabulate
+  - python=3.12
   - pip
+  - setuptools>=68
+  - numpy=1.26.4
+  - scipy=1.14.1
+  - pandas=2.2.3
+  - pyarrow=17.0.0
+  - pyyaml=6.0.2
+  - matplotlib=3.9.2
+  - pillow=12.3.0
+  - nbformat=5.10.4
+  - nbclient=0.10.2
+  - ipykernel=6.29.5
   - pip:
-      - gym
-      - filelock
-      # Optional for scalar-action benchmark reproduction:
-      # - d3rlpy
+      - torch==2.5.1
+      - pypdfium2==4.30.0
+      - -e .

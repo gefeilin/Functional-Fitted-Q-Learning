@@ -1,22 +1,27 @@
-horizon: 2
-gamma: 0.8
-size: 4
-iteration: 0
-run_tag: quickstart
-num_basis_knots: 6
-spline_degree: 3
-num_action_grid_points: 100
-lambda_grid_size: 2
-lambda_min: 0.0001
-lambda_max: 0.001
-num_cv_splits: 2
-fqi_iterations: 1
-training_iterations: 5
-fqe_simulations: 5
-fqe_cycles: 2
-fqe_eval_states: 4
-fqe_train_expectation_samples: 5
-fqe_eval_expectation_samples: 5
-learning_rate: 0.02
-early_stopping_patience: 2
-early_stopping_delta: 0.0001
+# Small CPU example; not the paper-scale experiment configuration.
+master_seed: 200000
+evaluation_seed: 200001
+n_subjects: 10
+t_per_subject: 3
+ode_substeps: 8
+action_grid_points: 16
+fqi_iterations: 2
+policy_basis_dimension: 4
+policy_coefficient: 0.001
+critic:
+  n_basis_nodes: 2
+  micro_hidden_layers: [4]
+  outer_hidden_layers: [8]
+  batch_size: 16
+  max_epochs: 4
+  early_stopping_patience: 2
+  require_early_stopping_convergence: false
+policy:
+  restarts: 1
+  max_objective_evals: 8
+  population_size: 4
+  objective_state_count: 8
+  candidate_batch_size: 2
+evaluation:
+  episodes: 8
+  horizon: 10

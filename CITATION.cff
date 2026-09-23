@@ -1,0 +1,13 @@
+cff-version: 1.2.0
+message: >-
+  Cite the accompanying manuscript,
+  Finite-Sample Theory for Fitted Q-Iteration When Actions Are Functions.
+title: "Functional Fitted Q-Iteration: Pendulum Simulation Code and Results"
+type: software
+version: 1.2.0
+license: MIT
+authors:
+  - name: Anonymous authors
+abstract: >-
+  Code, synthetic results, and reproduction instructions for functional-action
+  Pendulum experiments with AdaFNN and Nystrom KRR critics.

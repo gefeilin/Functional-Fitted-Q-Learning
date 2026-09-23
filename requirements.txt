@@ -1,15 +1,10 @@
-numpy
-pandas
-scipy
-scikit-learn
-torch>=2.0,<2.6
-gym
-filelock
-tqdm
-PyYAML
-matplotlib
-tabulate
-pytest
-
-# Optional, only for scalar-action benchmark reproduction:
-# d3rlpy
+numpy==1.26.4
+scipy==1.14.1
+pandas==2.2.3
+pyarrow==17.0.0
+PyYAML==6.0.2
+matplotlib==3.9.2
+Pillow==12.3.0
+nbformat==5.10.4
+nbclient==0.10.2
+ipykernel==6.29.5
