@@ -28,40 +28,40 @@ def grid_check(frame, field, levels):
             raise ValueError("Incomplete seed grid")
 
 
-def proxies(query, secant, method, *, fixed=False):
+def proxies(frame, method, *, fixed=False):
+    """Select the released fit-level identification summaries.
+
+    Held-out queries are summarized within each fitted model before release.
+    This keeps the public artifact compact and prevents query rows from being
+    mistaken for independent training replicates.
+    """
     keys = ["fit_id", "master_seed", "n_transitions", "lambda_dimensionless"]
     flag = "fixed_n_all_lambda_view" if fixed else "selected_sample_size_view"
-    q = query[
-        query.approximator.eq(method)
-        & query[flag]
-        & query.split.eq("B")
-        & query.query_class.isin(["learned", "behavior"])
-    ]
-    s = secant[
-        secant.approximator.eq(method)
-        & secant[flag]
-        & secant.split.eq("B")
-        & secant.query_class.eq("learned")
-    ]
-    counts = q.groupby(keys + ["query_class"]).size()
-    if len(counts) != 200 or not counts.eq(256).all() or len(s) != 100:
-        raise ValueError("Held-out query grid mismatch")
-    med = (
-        q.groupby(keys + ["query_class"])[["d_min", "relative_representation_leverage"]]
-        .median()
-        .reset_index()
+    selected = frame[frame.approximator.eq(method) & frame[flag]].copy()
+    if len(selected) != 100 or selected.duplicated(keys).any():
+        raise ValueError("Fit-level identification grid mismatch")
+    selected = selected.rename(
+        columns={
+            "d_min_median_behavior": "d_min_behavior",
+            "d_min_median_learned": "d_min_learned",
+            "relative_representation_leverage_median_behavior":
+                "relative_representation_leverage_behavior",
+            "relative_representation_leverage_median_learned":
+                "relative_representation_leverage_learned",
+        }
     )
-    wide = med.pivot_table(
-        index=keys,
-        columns="query_class",
-        values=["d_min", "relative_representation_leverage"],
-    ).reset_index()
-    wide.columns = [
-        "_".join(c).rstrip("_") if isinstance(c, tuple) else c for c in wide.columns
+    columns = keys + [
+        "d_min_behavior",
+        "d_min_learned",
+        "relative_representation_leverage_behavior",
+        "relative_representation_leverage_learned",
+        "D_actual_sq",
+        "G_actual_sq",
+        "actual_graph_design_ratio",
     ]
-    return wide.merge(
-        s[keys + ["actual_graph_design_ratio"]], on=keys, validate="one_to_one"
-    )
+    if not np.isfinite(selected[columns].select_dtypes(include=[np.number])).all().all():
+        raise ValueError("Non-finite released identification summary")
+    return selected[columns]
 
 
 def paired_summary(pair):

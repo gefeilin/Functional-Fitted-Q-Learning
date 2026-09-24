@@ -131,20 +131,26 @@ adafnn:
   critic_early_stopping_required: true
   deterministic_cuda: true
 identification:
+  analysis_design_id: functional_pendulum_oracle_identification_matched_n_v2
   checkpoint_pair:
   - 19
   - 20
   sample_size_panel: selected_lambda_only
   fixed_n_lambda_panel: all_five_positive_lambdas
-  heldout_seed_namespace: oracle_identification_queries_v1
-  heldout_subjects: 32
-  heldout_decisions: 17
+  heldout_seed_namespace: oracle_identification_queries_matched_n_v2
+  heldout_subjects_rule: n_subjects
+  heldout_decisions: 20
   retained_time_indices:
-  - 1
-  - 16
-  split_a_subjects: 16
-  paper_split: B
+  - 0
+  - 19
+  query_count_rule: n_transitions
+  paper_split: evaluation
   state_neighbor_count: 32
+  state_neighbor_sensitivity_counts:
+  - 16
+  - 32
+  - 64
+  - 128
   action_l2_radii:
   - 0.1
   - 0.25

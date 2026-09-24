@@ -11,9 +11,9 @@ Functional and constant-action results are paired by sample size and master seed
 | `selected_lambdas.csv` | 200 approximator/n/seed cells; selected fit IDs |
 | `reporting_values.csv` | 360 unique fits; independent `J_normalized_mean` |
 | `constant_returns.csv` | 100 separately trained AdaFNN constants |
-| `identification_query_metrics.parquet` | one held-out query/class/split/fit |
-| `identification_secant_metrics.parquet` | aggregate energies per fit/class/split |
-| `identification_spectrum.parquet` | representation eigenvalue/ridge records |
+| `identification_proxy_per_fit.csv` | locality, leverage, and adjacent-critic summaries for 360 fits |
+| `neighbor_sensitivity_per_fit.csv` | AdaFNN action-distance summaries for k=16, 32, 64, and 128 |
+| `identification_design.json` | checkpoint pair and independent q=n evaluation design |
 | `roughness.csv` | returned AdaFNN policy curvature and optimizer floor |
 
 Key columns:
@@ -26,20 +26,22 @@ Key columns:
 - `fixed_n_all_lambda_view`: all five candidates at n=8,000, including the selected
   one. These flags overlap; do not concatenate both views without deduplication.
 - `evaluation_seed`: independent reporting stream identity for pairing.
-- `split`: A or B; the paper uses B.
-- `query_class`: learned, previous, behavior, or reference action at held-out states.
-- `d_min`: minimum functional action L2 distance among 32 nearest training states.
-- `relative_representation_leverage`: leverage divided by the corresponding
-  fit/split's median held-out behavior leverage.
+- `d_min_median_learned`, `d_min_median_behavior`: within-fit median functional
+  action L2 distances among the 32 nearest training states.
+- `relative_representation_leverage_median_learned`: within-fit median
+  learned-action leverage normalized by the same fit's median held-out behavior
+  leverage.
 - `D_actual_sq`, `G_actual_sq`: actual clipped-critic difference squared energies
   on logged and policy designs.
 - `actual_graph_design_ratio`: G²/D², with no denominator regularization.
 - `raw_total_curvature_penalty`: uncentered integral of squared second derivative,
   averaged over training next states; not multiplied by lambda.
 
-Spectrum/projection/ridge fields beyond those used in the paper remain available
-as recorded diagnostics. Their presence is not a claim that all are theorem
-constants or that all should appear as manuscript plots.
+Every fit uses one independent cohort with `q = n = N x 20` evaluation states.
+Each listed action class is evaluated at these states. Query rows are summarized
+within each fit and are not treated as independent training replicates. Raw query
+tables remain with the full experiment archive; this public package includes the
+fit-level quantities needed to reproduce the reported figures.
 
 ## Figures
 
@@ -48,10 +50,10 @@ Each figure is written to `outputs/figures/` in PDF and PNG format.
 
 | Filename | Content |
 | --- | --- |
-| `main_value` | AdaFNN functional and constant-action returns versus sample size |
-| `main_identification` | Action locality and adjacent-critic energy ratio for AdaFNN |
+| `main_figure` | AdaFNN value, action locality, and adjacent-critic energy ratio |
 | `krr_value` | KRR return versus sample size |
 | `krr_identification` | KRR counterparts of the main identification diagnostics |
+| `neighbor_sensitivity` | AdaFNN action locality for k=16, 32, 64, and 128 |
 | `paired_value_difference` | Within-seed functional minus constant-action return |
 | `critic_update_energies` | Separate graph and logged-design critic energies |
 

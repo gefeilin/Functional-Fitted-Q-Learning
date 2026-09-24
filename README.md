@@ -100,7 +100,7 @@ src/functional_fitted_q/   Environment, policies, critics, FQI, and analysis
 scripts/                  Commands for training, evaluation, and plotting
 examples/                 Small example, analysis notebook, and Slurm example
 data/                     Generated offline trajectories
-results/source/           Per-run and per-query paper results
+results/source/           Per-run paper results and fit-level diagnostics
 results/reference/        Paper figures and numerical summaries
 docs/                     Experimental details and running instructions
 tests/                    Tests for settings, selection, statistics, and resume
@@ -120,7 +120,9 @@ identification statistics are in [docs/experiments.md](docs/experiments.md).
 [Compute requirements](docs/compute.md) and [data availability](data/README.md)
 are documented separately. Fitted paper checkpoints are not included; the saved
 results are sufficient for plotting, while checkpoint-level analysis requires
-retraining.
+retraining. Identification evaluates Q19 and Q20 on an independent cohort of
+`q = n = N x 20` states. The learned and observed behavior actions are evaluated
+at each state in this cohort.
 
 ## Tests and analysis notebook
 

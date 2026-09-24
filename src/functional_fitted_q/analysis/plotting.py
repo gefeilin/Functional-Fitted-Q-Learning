@@ -13,7 +13,10 @@ from .statistics import bootstrap_interval
 
 NG = [2000, 4000, 8000, 16000, 32000]
 LG = [0.0001, 0.001, 0.01, 0.1, 1.0]
-BLUE, GRAY, ORANGE = "#2c6ca2", "#63727e", "#bf6530"
+BLUE, GRAY, ORANGE = "#0072B2", "#6F7880", "#2F3E46"
+PURPLE, GOLD = "#8E5EA2", "#E69F00"
+LEVERAGE_BLUE = "#2C6CA2"
+KRR_ENERGY_ORANGE = "#C45A24"
 OUT = None
 SUMMARY = []
 FIGURES = []
@@ -78,9 +81,9 @@ def panel(
         color=color,
         marker=marker,
         linestyle="--" if dashed else "-",
-        markersize=3.8,
-        linewidth=1.25,
-        elinewidth=0.8,
+        markersize=3.2,
+        linewidth=1.15,
+        elinewidth=0.75,
         capsize=2,
         label=label,
         zorder=3,
@@ -103,7 +106,9 @@ def panel(
     ax.update_datalim(np.column_stack((levels, lows)))
     ax.update_datalim(np.column_stack((levels, highs)))
     ax.autoscale_view()
-    ax.margins(y=0.20)
+    if annotate:
+        ax.margins(y=0.20)
+    return points, lows, highs
 
 
 def axis(ax, field):
@@ -115,10 +120,14 @@ def axis(ax, field):
         else [r"$10^{-4}$", r"$10^{-3}$", r"$10^{-2}$", r"$10^{-1}$", r"$1$"]
     )
     ax.set_xscale("log", base=2 if sample else 10)
+    ax.set_box_aspect(1)
     ax.xaxis.set_major_locator(FixedLocator(levels))
     ax.xaxis.set_major_formatter(FixedFormatter(labels))
     ax.xaxis.set_minor_locator(NullLocator())
-    ax.set_xlim(levels[0] / (1.3 if sample else 2), levels[-1] * (1.3 if sample else 2))
+    if sample:
+        ax.set_xlim(1450, 47500)
+    else:
+        ax.set_xlim(levels[0] / 2, levels[-1] * 2)
     ax.set_xlabel(
         "Offline transitions, $n$"
         if sample
@@ -128,7 +137,7 @@ def axis(ax, field):
     ax.set_axisbelow(True)
     ax.spines["top"].set_visible(False)
     ax.spines["right"].set_visible(False)
-    ax.tick_params(length=3, width=0.6, pad=2)
+    ax.tick_params(length=2.5, width=0.6, pad=2)
 
 
 def canvas(count=1, height=1.85):
@@ -139,25 +148,32 @@ def save(fig, stem, expected_axes):
     check(len(fig.axes) == expected_axes, "Unexpected axes: " + stem)
     fig.savefig(
         OUT / (stem + ".pdf"),
+        bbox_inches="tight",
         metadata={
             "CreationDate": datetime(2000, 1, 1),
             "Creator": "FFQI paper reproduction",
         },
     )
-    fig.savefig(OUT / (stem + ".png"), dpi=320)
-    FIGURES.append(dict(stem=stem, axes=expected_axes, width_inches=5.5))
+    fig.savefig(OUT / (stem + ".png"), dpi=320, bbox_inches="tight")
+    FIGURES.append(
+        dict(stem=stem, axes=expected_axes, width_inches=fig.get_size_inches()[0])
+    )
     plt.close(fig)
 
 
 def diagnostics(frame, stem, field, kind="all"):
     """Render locality and identification panels for one approximator."""
     count = 2 if kind == "main" else 3
+    is_krr_sample = kind == "krr_sample"
+    learned_color = LEVERAGE_BLUE if is_krr_sample else PURPLE
+    behavior_color = GRAY if is_krr_sample else GOLD
     fig, axes = canvas(count, 1.9 if count == 2 else 2.1)
     panel(
         axes[0],
         frame,
         field,
         "d_min_learned",
+        color=learned_color,
         label="Learned policy" if count == 2 else "Learned",
         figure=stem,
         panel_id="a",
@@ -167,7 +183,7 @@ def diagnostics(frame, stem, field, kind="all"):
         frame,
         field,
         "d_min_behavior",
-        color=GRAY,
+        color=behavior_color,
         label="Behavior",
         shift=100,
         marker="s",
@@ -180,14 +196,16 @@ def diagnostics(frame, stem, field, kind="all"):
     )
     axes[0].set_ylabel("Nearest-action\n$L^2$ distance")
     axes[0].legend(
-        frameon=False, fontsize=8, handlelength=1.5, labelspacing=0.15, loc="upper left"
+        frameon=False,
+        fontsize=6.1,
+        handlelength=1.3,
     )
     axes[0].set_ylim(bottom=0)
     specs = [
         (
             axes[-1],
             "actual_graph_design_ratio",
-            ORANGE,
+            KRR_ENERGY_ORANGE if is_krr_sample else ORANGE,
             "(b) Adjacent-critic energy" if count == 2 else "(c) Energy ratio",
             "Graph/design\nenergy ratio",
         )
@@ -198,19 +216,18 @@ def diagnostics(frame, stem, field, kind="all"):
             (
                 axes[1],
                 "relative_representation_leverage_learned",
-                BLUE,
+                LEVERAGE_BLUE,
                 "(b) Leverage",
                 "Relative feature\nleverage",
             ),
         )
     for ax, metric, color, title, ylabel in specs:
         panel(ax, frame, field, metric, color=color, figure=stem, panel_id=title[1])
-        ax.axhline(1, color="#737b81", linestyle=":", linewidth=0.9, zorder=1)
+        ax.axhline(1, color="#737b81", linestyle=":", linewidth=0.8)
         ax.set_title(title, loc="left")
         ax.set_ylabel(ylabel)
-        if "leverage" in metric or (kind == "krr_sample" and "ratio" in metric):
+        if "leverage" in metric or (is_krr_sample and "ratio" in metric):
             ax.set_yscale("log")
-            ax.yaxis.set_minor_locator(NullLocator())
         else:
             ax.yaxis.set_major_locator(MaxNLocator(4))
     for ax in axes:
@@ -219,7 +236,7 @@ def diagnostics(frame, stem, field, kind="all"):
         # Compact, unambiguous labels keep all three panels readable at 5.5 in.
         axes[0].set_ylabel("Action distance")
         axes[1].set_ylabel("Relative leverage")
-        axes[2].set_ylabel("Energy ratio")
+        axes[2].set_ylabel("Energy ratio" if is_krr_sample else "Graph/design energy ratio")
         if field == "lambda_dimensionless":
             # Keep the legend above every distance CI, including the broad
             # fixed-coefficient intervals, without clipping observations.
@@ -240,7 +257,8 @@ def main_line(
     right=False,
     marker="o",
     dashed=False,
-    fmt=".2f"
+    fmt=".2f",
+    annotate=True,
 ):
     rows = values[values.metric.eq(metric)].sort_values("n")
     assert rows.n.tolist() == NG
@@ -253,23 +271,24 @@ def main_line(
         label=label,
         marker=marker,
         linestyle="--" if dashed else "-",
-        linewidth=1.2,
-        elinewidth=0.8,
+        linewidth=1.15,
+        elinewidth=0.75,
         capsize=2,
-        markersize=3.5,
+        markersize=3.2,
     )
-    for x, y, l, h in zip(NG, c, lo, hi):
-        ax.annotate(
-            format(y, fmt),
-            (x, l if lower else h),
-            xytext=(4, 1) if right else ((0, -4) if lower else (0, 4)),
-            textcoords="offset points",
-            fontsize=7.3,
-            color=color,
-            ha="left" if right else "center",
-            va="top" if lower else "bottom",
-            annotation_clip=False,
-        )
+    if annotate:
+        for x, y, l, h in zip(NG, c, lo, hi):
+            ax.annotate(
+                format(y, fmt),
+                (x, l if lower else h),
+                xytext=(4, 1) if right else ((0, -4) if lower else (0, 4)),
+                textcoords="offset points",
+                fontsize=7.3,
+                color=color,
+                ha="left" if right else "center",
+                va="top" if lower else "bottom",
+                annotation_clip=False,
+            )
 
 
 def main_style(ax):
@@ -288,99 +307,95 @@ def main_style(ax):
 def main_save(fig, name):
     fig.savefig(
         OUT / (name + ".pdf"),
+        bbox_inches="tight",
         metadata={
             "CreationDate": datetime(2000, 1, 1),
             "Creator": "Functional Fitted Q-Iteration",
         },
     )
-    fig.savefig(OUT / (name + ".png"), dpi=320)
+    fig.savefig(OUT / (name + ".png"), dpi=320, bbox_inches="tight")
     plt.close(fig)
 
 
 def render_main(values, output):
-    """Render both main-text figures from recorded plotted values."""
+    """Render the paper's three-panel main experiment figure."""
     global OUT
     OUT = output
     plt.rcParams.update(
         {
             "font.family": "DejaVu Sans",
-            "font.size": 7.5,
-            "axes.labelsize": 7.5,
-            "axes.titlesize": 8,
-            "xtick.labelsize": 7,
-            "ytick.labelsize": 7,
-            "legend.fontsize": 7.3,
+            "font.size": 7,
+            "axes.labelsize": 7,
+            "axes.titlesize": 7.4,
+            "xtick.labelsize": 6.4,
+            "ytick.labelsize": 6.4,
+            "legend.fontsize": 6.1,
             "pdf.fonttype": 42,
             "ps.fonttype": 42,
             "axes.linewidth": 0.6,
         }
     )
 
-    fig, ax = plt.subplots(figsize=(4.05, 2.3))
-    fig.subplots_adjust(left=0.135, right=0.975, bottom=0.19, top=0.965)
+    fig, axes = plt.subplots(1, 3, figsize=(5.5, 1.9))
+    fig.subplots_adjust(left=0.078, right=0.985, bottom=0.13, top=0.94, wspace=0.42)
+    for ax, title in zip(
+        axes, ["(a) Policy value", "(b) Action distance", "(c) Critic energy"]
+    ):
+        main_style(ax)
+        ax.set_box_aspect(1)
+        ax.set_title(title, loc="left", pad=6)
     main_line(
-        ax,
+        axes[0],
         values,
         "J_normalized_mean_ffqi",
-        "Functional-action policy",
+        "Functional action",
         BLUE,
         fmt=".3f",
+        annotate=False,
     )
     main_line(
-        ax,
+        axes[0],
         values,
         "J_normalized_mean_constant",
-        "Constant-action policy",
+        "Constant action",
         GRAY,
         lower=True,
         marker="s",
         dashed=True,
         fmt=".3f",
+        annotate=False,
     )
-    main_style(ax)
-    ax.set_ylim(0.485, 0.77)
-    ax.set_yticks([0.50, 0.55, 0.60, 0.65, 0.70, 0.75])
-    ax.set_ylabel("Normalized return $(1-\\gamma)J_{100}$", labelpad=4)
-    ax.set_xlabel("Offline transitions, $n$", labelpad=3)
-    ax.legend(frameon=False, loc="upper left", labelspacing=0.3)
-    main_save(fig, "main_value")
-
-    fig, axes = plt.subplots(1, 2, figsize=(5.5, 2.35))
-    fig.subplots_adjust(left=0.09, right=0.98, bottom=0.19, top=0.775, wspace=0.40)
-    for ax, title in zip(
-        axes, ["(a) Local action distance", "(b) Adjacent-critic energy"]
-    ):
-        main_style(ax)
-        ax.set_title(title, loc="left", pad=24)
-    main_line(axes[0], values, "d_min_learned", "Learned policy", BLUE)
+    axes[0].set_ylim(0.485, 0.77)
+    axes[0].set_yticks([0.50, 0.55, 0.60, 0.65, 0.70, 0.75])
+    axes[0].set_ylabel("Normalized policy value")
+    axes[0].legend(frameon=False, loc="upper left", borderaxespad=0.35,
+                   handlelength=1.45, handletextpad=0.4, labelspacing=0.25)
     main_line(
-        axes[0],
+        axes[1], values, "d_min_learned", "Learned action", PURPLE,
+        annotate=False,
+    )
+    main_line(
+        axes[1],
         values,
         "d_min_behavior",
         "Behavior",
-        GRAY,
+        GOLD,
         right=True,
         marker="s",
         dashed=True,
+        annotate=False,
     )
-    axes[0].set_ylim(0, 3.3)
-    axes[0].set_yticks([0, 1, 2, 3])
-    axes[0].set_ylabel("Nearest-action $L^2$ distance", labelpad=4)
-    axes[0].legend(
-        frameon=False,
-        loc="lower left",
-        bbox_to_anchor=(0, 1.015),
-        ncol=2,
-        borderaxespad=0,
-        handlelength=1.2,
-        handletextpad=0.4,
-        columnspacing=1,
-        fontsize=7,
+    # Leave headroom above the widest bootstrap interval so the legend does
+    # not cover the learned-action curve.
+    axes[1].set_ylim(0, 3.3)
+    axes[1].set_ylabel("Nearest-action $L^2$ distance")
+    axes[1].legend(frameon=False, loc="upper left", borderaxespad=0.35,
+                   handlelength=1.3, handletextpad=0.35, labelspacing=0.25)
+    main_line(
+        axes[2], values, "actual_graph_design_ratio", None, ORANGE,
+        annotate=False,
     )
-    main_line(axes[1], values, "actual_graph_design_ratio", None, ORANGE)
-    axes[1].set_ylim(0.79, 1.55)
-    axes[1].set_yticks([0.8, 1.0, 1.2, 1.4])
-    axes[1].set_ylabel("Graph/design energy ratio", labelpad=4)
-    axes[1].axhline(1, color="#737b81", linestyle=":", linewidth=0.8)
-    fig.supxlabel("Offline transitions, $n$", fontsize=7.5, y=0.04)
-    main_save(fig, "main_identification")
+    axes[2].set_ylim(bottom=0)
+    axes[2].set_ylabel("Graph/design energy ratio")
+    axes[2].axhline(1, color="#737b81", linestyle=":", linewidth=0.8)
+    main_save(fig, "main_figure")

@@ -168,9 +168,10 @@ five-sample-size trajectory for each seed. Resampling code is in
 
 ## Critic diagnostics
 
-We retain Q19 and Q20 and generate an independent held-out behavior sample of
-32 subjects with 17 decisions. Decision indices 1–16 are used. The paper plots
-split B, comprising 16 subjects and 256 query states per action class.
+For each fitted model, Q19 and Q20 are evaluated on an independent cohort of N
+new subjects with T=20 decisions. The cohort therefore contains q=n evaluation
+states: 2,000, 4,000, 8,000, 16,000, or 32,000. The learned, previous, observed
+behavior, and reference actions are evaluated at each state in this cohort.
 
 At each query state, take the 32 nearest logged states under the scaled state
 metric. Measure the minimum functional L2 distance from the query action to
@@ -181,7 +182,7 @@ For h(s,a)=Q20(s,a)-Q19(s,a), computed with the deployed clipped critics, define
 
 \[
 D^2=\frac1n\sum_{(s,a)\in D}h(s,a)^2,\qquad
-G^2=\frac1{256}\sum_{s\in B}h\{s,\pi_{20}(s)\}^2,\qquad
+G^2=\frac1q\sum_{j=1}^q h\{S_j^{\rm ev},\pi_{20}(S_j^{\rm ev})\}^2,\qquad q=n,
 C_{\rm adj}=G^2/D^2.
 \]
 
@@ -192,10 +193,16 @@ The appendix also shows G² and D² separately.
 Additional diagnostics use AdaFNN's current final hidden features plus bias,
 or whitened Nyström features for KRR. Their design second moment is uncentered.
 Feature leverage is divided by the median held-out behavior leverage within
-the same fit and split. Actual and feature-projected critic differences are
-stored separately because these representations need not capture a nonlinear
-or clipped critic difference exactly.
+the corresponding fit and evaluation cohort. Actual and feature-projected critic
+differences are stored separately because these representations need not capture
+a nonlinear or clipped critic difference exactly.
 
-These plots describe finite-sample action locality and realized critic updates.
-They illustrate the motivation for the theory; they do not estimate true-Q
-error or verify a population identification bound.
+AdaFNN restores the two saved critic parameter states directly. KRR restores
+the saved Q19/Q20 coefficient vectors and deterministically reconstructs the
+Nyström feature design needed to evaluate those coefficients; it does not refit
+Bellman targets, ridge coefficients, or policies.
+
+Query rows are summarized within a fit before uncertainty is computed across the
+20 data/training seeds. These plots describe finite-sample action locality and
+realized critic updates. They illustrate the motivation for the theory; they do
+not estimate true-Q error or verify a population identification bound.

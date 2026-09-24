@@ -18,23 +18,8 @@ def tables(source, output):
     report = pd.read_csv(source / "reporting_values.csv")
     tuning = pd.read_csv(source / "tuning_candidate_values.csv")
     constant = pd.read_csv(source / "constant_returns.csv")
-    columns = [
-        "fit_id",
-        "master_seed",
-        "n_transitions",
-        "lambda_dimensionless",
-        "approximator",
-        "split",
-        "query_class",
-        "selected_sample_size_view",
-        "fixed_n_all_lambda_view",
-        "d_min",
-        "relative_representation_leverage",
-    ]
-    query = pd.read_parquet(
-        source / "identification_query_metrics.parquet", columns=columns
-    )
-    secant = pd.read_parquet(source / "identification_secant_metrics.parquet")
+    proxy = pd.read_csv(source / "identification_proxy_per_fit.csv")
+    neighbor = pd.read_csv(source / "neighbor_sensitivity_per_fit.csv")
     winners = (
         tuning.sort_values(
             ["tuning_J_normalized_mean", "lambda_dimensionless"],
@@ -63,8 +48,8 @@ def tables(source, output):
         result[method] = dict(
             selected=selected,
             candidates_n8000=fixed,
-            selected_diagnostics=proxies(query, secant, method),
-            candidate_diagnostics_n8000=proxies(query, secant, method, fixed=True),
+            selected_diagnostics=proxies(proxy, method),
+            candidate_diagnostics_n8000=proxies(proxy, method, fixed=True),
         )
         for name, frame in result[method].items():
             frame.to_csv(output / (method + "_" + name + ".csv"), index=False)
@@ -84,11 +69,7 @@ def tables(source, output):
     pair.to_csv(output / "paired_returns.csv", index=False)
     paired = paired_summary(pair)
     paired.to_csv(output / "paired_difference_summary.csv", index=False)
-    energies = secant[
-        secant.selected_sample_size_view
-        & secant.split.eq("B")
-        & secant.query_class.eq("learned")
-    ].copy()
+    energies = proxy[proxy.selected_sample_size_view].copy()
     if len(energies) != 200 or not energies.D_actual_sq.gt(0).all():
         raise ValueError("Invalid empirical energy denominator")
     np.testing.assert_allclose(
@@ -162,11 +143,28 @@ def tables(source, output):
             )
     main = pd.DataFrame(values)
     main.to_csv(output / "main_figure_values.csv", index=False)
-    return result, main, paired, energies
+    # This compact table contains only the selected AdaFNN fits.  Selection is
+    # explicit in its fit IDs and was checked against the selected proxy table
+    # when the release was built; repeating a constant Boolean column would add
+    # no information for readers.
+    selected_neighbor = neighbor.copy()
+    expected_neighbor_rows = len(N_GRID) * 20 * 4 * 2
+    if (
+        len(selected_neighbor) != expected_neighbor_rows
+        or set(selected_neighbor.fit_id)
+        != set(result["adafnn"]["selected_diagnostics"].fit_id)
+        or set(selected_neighbor.query_class) != {"learned", "behavior"}
+        or set(selected_neighbor.state_neighbor_count) != {16, 32, 64, 128}
+        or not selected_neighbor.query_count.eq(
+            selected_neighbor.n_transitions
+        ).all()
+    ):
+        raise ValueError("Neighbor-sensitivity grid mismatch")
+    return result, main, paired, energies, selected_neighbor
 
 
-def render_appendix(frames, paired, energies, output):
-    """Render the four appendix figures and return their plotted values."""
+def render_appendix(frames, paired, energies, neighbor, output):
+    """Render the five appendix figures and return their plotted values."""
     from . import plotting as p
     from matplotlib.ticker import NullLocator
 
@@ -176,17 +174,15 @@ def render_appendix(frames, paired, energies, output):
     p.plt.rcParams.update(
         {
             "font.family": "DejaVu Sans",
-            "font.size": 8.5,
-            "axes.titlesize": 8.5,
-            "axes.labelsize": 9,
-            "xtick.labelsize": 8,
-            "ytick.labelsize": 8,
-            "legend.fontsize": 8,
+            "font.size": 7,
+            "axes.labelsize": 7,
+            "axes.titlesize": 7.4,
+            "xtick.labelsize": 6.4,
+            "ytick.labelsize": 6.4,
+            "legend.fontsize": 6.1,
             "pdf.fonttype": 42,
             "ps.fonttype": 42,
-            "axes.linewidth": 0.65,
-            "figure.constrained_layout.h_pad": 0.025,
-            "figure.constrained_layout.w_pad": 0.03,
+            "axes.linewidth": 0.6,
         }
     )
     fig, ax = p.canvas(height=2.0)
@@ -202,7 +198,10 @@ def render_appendix(frames, paired, energies, output):
         figure="krr_value",
     )
     p.axis(ax, "n_transitions")
-    ax.set_ylabel("Normalized return\n$(1-\\gamma)J_{100}$")
+    # The Overleaf appendix uses a wide single panel rather than the square
+    # aspect shared by multi-panel diagnostic axes.
+    ax.set_box_aspect(None)
+    ax.set_ylabel("Normalized policy value\n$(1-\\gamma)J_{100}$")
     p.save(fig, "krr_value", 1)
     p.diagnostics(
         frames["nystrom_krr"]["selected_diagnostics"],
@@ -210,6 +209,37 @@ def render_appendix(frames, paired, energies, output):
         "n_transitions",
         "krr_sample",
     )
+    fig, axes = p.plt.subplots(1, 4, figsize=(7.2, 2.0), constrained_layout=True)
+    upper = 0.0
+    for ax, count, panel_id in zip(axes, [16, 32, 64, 128], ["a", "b", "c", "d"]):
+        subset = neighbor[neighbor.state_neighbor_count.eq(count)]
+        for query_class, color, label, marker, dashed, shift in [
+            ("learned", p.PURPLE, "Learned", "o", False, 0),
+            ("behavior", p.GOLD, "Behavior", "s", True, 100),
+        ]:
+            rows = subset[subset.query_class.eq(query_class)]
+            _, _, highs = p.panel(
+                ax,
+                rows,
+                "n_transitions",
+                "d_min_median",
+                color=color,
+                label=label,
+                marker=marker,
+                dashed=dashed,
+                shift=shift,
+                figure="neighbor_sensitivity",
+                panel_id=panel_id,
+            )
+            upper = max(upper, float(highs.max()))
+        p.axis(ax, "n_transitions")
+        ax.set_title(f"({panel_id}) $k={count}$", loc="left")
+        if count == 16:
+            ax.set_ylabel("Nearest-action $L^2$ distance")
+            ax.legend(frameon=False, fontsize=6.1, handlelength=1.2)
+    for ax in axes:
+        ax.set_ylim(0, upper * 1.08)
+    p.save(fig, "neighbor_sensitivity", 4)
     fig, ax = p.canvas(height=2.0)
     ax.errorbar(
         N_GRID,
@@ -221,6 +251,9 @@ def render_appendix(frames, paired, energies, output):
     )
     ax.axhline(0, color="gray", linestyle=":")
     p.axis(ax, "n_transitions")
+    # Match the wide single-panel appendix layout used for the KRR value
+    # figure and keep the 32k tick clear of the centered x-axis label.
+    ax.set_box_aspect(None)
     ax.set_ylabel("Paired normalized-\nreturn difference")
     p.save(fig, "paired_value_difference", 1)
     fig, axes = p.canvas(2, 2.15)
@@ -228,9 +261,9 @@ def render_appendix(frames, paired, energies, output):
         axes, ["adafnn", "nystrom_krr"], ["(a) AdaFNN", "(b) Nyström KRR"]
     ):
         f = energies[energies.approximator.eq(method)]
-        for metric, color, label, marker, dashed in [
-            ("G_actual_sq", p.BLUE, "Policy actions", "o", False),
-            ("D_actual_sq", p.GRAY, "Logged design", "s", True),
+        for metric, color, label, marker, dashed, shift in [
+            ("G_actual_sq", p.BLUE, "Policy queries", "o", False, 0),
+            ("D_actual_sq", p.GRAY, "Logged design", "s", True, 100),
         ]:
             p.panel(
                 ax,
@@ -241,14 +274,15 @@ def render_appendix(frames, paired, energies, output):
                 label=label,
                 marker=marker,
                 dashed=dashed,
+                shift=shift,
                 figure="critic_update_energies",
                 panel_id=method,
             )
         p.axis(ax, "n_transitions")
         ax.set_yscale("log")
         ax.set_title(title, loc="left")
-        ax.set_ylabel("Mean squared\ncritic difference")
-        ax.legend(frameon=False, fontsize=8)
+        ax.set_ylabel("Mean squared critic difference")
+        ax.legend(frameon=False, fontsize=7)
     p.save(fig, "critic_update_energies", 2)
     return pd.DataFrame(p.SUMMARY)
 
@@ -263,9 +297,9 @@ def reproduce(root, source, output):
     fig = output / "figures"
     tab.mkdir(parents=True, exist_ok=True)
     fig.mkdir(parents=True, exist_ok=True)
-    frames, main, paired, energies = tables(source, tab)
+    frames, main, paired, energies, neighbor = tables(source, tab)
     plotting.render_main(main, fig)
-    extra = render_appendix(frames, paired, energies, fig)
+    extra = render_appendix(frames, paired, energies, neighbor, fig)
     extra.to_csv(tab / "appendix_figure_values.csv", index=False)
     print(
         json.dumps(

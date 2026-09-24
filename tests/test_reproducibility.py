@@ -1,6 +1,7 @@
 """Fast CPU contracts: paper grid, tuning isolation, and seed-level statistics."""
 
 import unittest
+import yaml
 import numpy as np
 import pandas as pd
 from functional_fitted_q.runtime import project_root
@@ -66,6 +67,21 @@ class PaperGridTests(unittest.TestCase):
             self.assertNotEqual(tune, report)
             self.assertEqual(tune, derived_mc_seed(seed, "oracle_lambda_tuning_v1"))
 
+    def test_identification_queries_match_training_sample_size(self):
+        config = yaml.safe_load(
+            (self.root / "configs/paper_simulation.yaml").read_text()
+        )["identification"]
+        self.assertEqual(config["heldout_subjects_rule"], "n_subjects")
+        self.assertEqual(config["heldout_decisions"], 20)
+        self.assertEqual(config["query_count_rule"], "n_transitions")
+        self.assertEqual(config["paper_split"], "evaluation")
+        self.assertEqual(config["state_neighbor_count"], 32)
+        self.assertEqual(
+            config["state_neighbor_sensitivity_counts"], [16, 32, 64, 128]
+        )
+        for task in self.manifest["candidate_fits"]:
+            self.assertEqual(task["n_transitions"], task["n_subjects"] * 20)
+
 
 class TuningTests(unittest.TestCase):
     def candidates(self):
@@ -128,6 +144,36 @@ class StatisticTests(unittest.TestCase):
         frame.loc[1, "master_seed"] = 0
         with self.assertRaises(ValueError):
             grid_check(frame, "n", N_GRID)
+
+
+class ReleasedIdentificationTests(unittest.TestCase):
+    def setUp(self):
+        self.root = project_root()
+        self.proxy = pd.read_csv(
+            self.root / "results/source/identification_proxy_per_fit.csv"
+        )
+        self.neighbor = pd.read_csv(
+            self.root / "results/source/neighbor_sensitivity_per_fit.csv"
+        )
+
+    def test_fit_level_grid_and_energy_identity(self):
+        self.assertEqual(len(self.proxy), 360)
+        self.assertEqual(int(self.proxy.selected_sample_size_view.sum()), 200)
+        self.assertEqual(int(self.proxy.fixed_n_all_lambda_view.sum()), 200)
+        np.testing.assert_allclose(
+            self.proxy.actual_graph_design_ratio,
+            self.proxy.G_actual_sq / self.proxy.D_actual_sq,
+            rtol=1e-12,
+            atol=1e-12,
+        )
+
+    def test_neighbor_queries_match_each_training_cell(self):
+        self.assertEqual(len(self.neighbor), 800)
+        self.assertEqual(set(self.neighbor.state_neighbor_count), {16, 32, 64, 128})
+        self.assertEqual(set(self.neighbor.query_class), {"learned", "behavior"})
+        self.assertTrue(
+            self.neighbor.query_count.eq(self.neighbor.n_transitions).all()
+        )
 
 
 if __name__ == "__main__":

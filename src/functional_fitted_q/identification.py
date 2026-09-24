@@ -117,11 +117,14 @@ def representation_identification(
             )
         )
     query = pd.concat(frames, ignore_index=True)
+    split_names = tuple(dict.fromkeys(np.asarray(splits).astype(str).tolist()))
+    if not split_names:
+        raise ValueError("at least one held-out evaluation set is required")
     primary_leverage = "representation_leverage_eta_1e-03"
     query["relative_representation_leverage"] = np.nan
     query["locality_leverage_discordance"] = False
     discordance = []
-    for split in ("A", "B"):
+    for split in split_names:
         behavior = query[
             (query["split"] == split) & (query["query_class"] == "behavior")
         ]
@@ -152,7 +155,7 @@ def representation_identification(
     rows = []
     actual_denominator = float(projection["actual_design_energy"])
     projected_denominator = float(projection["projected_regularized_denominator"])
-    for split in ("A", "B"):
+    for split in split_names:
         mask = splits == split
         for query_class in classes:
             actual = np.asarray(actual_secants_by_class[query_class])[mask]

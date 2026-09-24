@@ -1,0 +1,14 @@
+{
+  "analysis_design_id": "functional_pendulum_oracle_identification_matched_n_v2",
+  "checkpoint_pair": [19, 20],
+  "evaluation_set": {
+    "independent_of_training_data": true,
+    "query_count_per_action_class": "q = n = N x 20",
+    "split_count": 1,
+    "split_label": "evaluation",
+    "trajectory_length": 20
+  },
+  "fit_level_replicates": 20,
+  "query_rows_used_as_replicates": false,
+  "sample_sizes": [2000, 4000, 8000, 16000, 32000]
+}

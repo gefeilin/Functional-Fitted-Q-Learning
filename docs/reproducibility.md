@@ -75,7 +75,9 @@ python scripts/analyze_identification.py --approximator adafnn --n 8000 --seed 0
 
 Repeat these commands for each coefficient, seed, and approximator. At the other
 sample sizes, evaluate and analyze only the selected coefficient. The analysis
-uses the retained Q19 and Q20 checkpoints and independent held-out states.
+evaluates Q19 and Q20 on an independent cohort. A cell with `n = N x 20`
+transitions uses `N` new trajectories of 20 decisions, giving `q = n` evaluation
+states. The learned and observed behavior actions are evaluated at each state.
 Across both approximators this requires 360 unique reporting runs and 360
 identification analyses. The selected n=8,000 run is reused in the sample-size
 curve rather than evaluated twice.

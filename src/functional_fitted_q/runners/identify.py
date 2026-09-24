@@ -33,6 +33,7 @@ from functional_fitted_q.data import (
 from functional_fitted_q.diagnostics.adafnn_representation import (
     critic_values,
     penultimate_features,
+    raw_action_locality_metrics,
 )
 from functional_fitted_q.formal_config import load_pendulum_config
 from functional_fitted_q.identification import (
@@ -131,8 +132,22 @@ def _adafnn_config(parent: dict) -> AdaFNNCriticTrainingConfig:
     )
 
 
-def _heldout(config: dict, task: dict, root: Path) -> dict[str, np.ndarray]:
+def _heldout(config: dict, task: dict, root: Path) -> dict[str, object]:
     identification = config["identification"]
+    if identification.get("heldout_subjects_rule") != "n_subjects":
+        raise ValueError("held-out subjects must match the training sample-size cell")
+    if identification.get("query_count_rule") != "n_transitions":
+        raise ValueError("held-out query count must equal n")
+    n_subjects = int(task["n_subjects"])
+    decisions = int(task["t_per_subject"])
+    if int(identification["heldout_decisions"]) != decisions:
+        raise ValueError("held-out and training trajectory lengths differ")
+    start, stop = [int(value) for value in identification["retained_time_indices"]]
+    if not (0 <= start <= stop < decisions):
+        raise ValueError("invalid held-out decision range")
+    retained = stop - start + 1
+    if n_subjects * retained != int(task["n_transitions"]):
+        raise ValueError("held-out evaluation query count does not equal n")
     seed = derived_mc_seed(
         int(task["master_seed"]), identification["heldout_seed_namespace"]
     )
@@ -146,14 +161,13 @@ def _heldout(config: dict, task: dict, root: Path) -> dict[str, np.ndarray]:
     data = generate_offline_dataset(
         master_seed=seed,
         reference=reference,
-        n_subjects=int(identification["heldout_subjects"]),
-        t_per_subject=int(identification["heldout_decisions"]),
+        n_subjects=n_subjects,
+        t_per_subject=decisions,
         env_config=environment,
         gp_resolution=128,
         step_gp_amplitude=float(config["scope"]["step_gp_amplitude"]),
         vectorized=True,
     )
-    start, stop = [int(value) for value in identification["retained_time_indices"]]
     mask = (data.time_indices >= start) & (data.time_indices <= stop)
     states = np.asarray(data.states[mask], dtype=np.float64)
     actions = np.asarray(data.action_values[mask], dtype=np.float64)
@@ -163,11 +177,9 @@ def _heldout(config: dict, task: dict, root: Path) -> dict[str, np.ndarray]:
     states, actions, subjects, times = (
         value[order] for value in (states, actions, subjects, times)
     )
-    split_subjects = np.asarray(
-        data.subject_order[: int(identification["split_a_subjects"])],
-        dtype=np.int64,
+    splits = np.full(
+        len(states), identification["paper_split"], dtype="U16"
     )
-    splits = np.where(np.isin(subjects, split_subjects), "A", "B").astype("U1")
     action_grid = np.linspace(0.0, 1.0, actions.shape[1])
     return {
         "states": states,
@@ -178,6 +190,16 @@ def _heldout(config: dict, task: dict, root: Path) -> dict[str, np.ndarray]:
         "splits": splits,
         "action_grid": action_grid,
         "derived_seed": np.asarray(seed, dtype=np.uint32),
+        "design": {
+            "heldout_subjects": n_subjects,
+            "heldout_decisions": decisions,
+            "retained_time_start": start,
+            "retained_time_stop": stop,
+            "retained_decisions": retained,
+            "query_count_total": n_subjects * retained,
+            "split_count": 1,
+            "split_label": identification["paper_split"],
+        },
     }
 
 
@@ -303,9 +325,7 @@ def main() -> None:
     heldout = _heldout(config, task, root)
     if args.smoke_query_rows is not None:
         count = min(int(args.smoke_query_rows), len(heldout["states"]))
-        a = np.flatnonzero(heldout["splits"] == "A")[: count // 2]
-        b = np.flatnonzero(heldout["splits"] == "B")[: count - len(a)]
-        take = np.concatenate([a, b])
+        take = np.arange(count, dtype=np.int64)
         for key in (
             "states",
             "behavior_actions",
@@ -315,12 +335,22 @@ def main() -> None:
             "splits",
         ):
             heldout[key] = heldout[key][take]
-    neighbor_indices, neighbor_state_sq = blocked_state_neighbors(
+    neighbor_counts = tuple(
+        int(value)
+        for value in config["identification"]["state_neighbor_sensitivity_counts"]
+    )
+    primary_neighbor_count = int(config["identification"]["state_neighbor_count"])
+    if sorted(set(neighbor_counts)) != [16, 32, 64, 128]:
+        raise ValueError("the paper neighbor-sensitivity grid has changed")
+    if primary_neighbor_count not in neighbor_counts:
+        raise ValueError("primary state-neighbor count is absent from sensitivity grid")
+    all_neighbor_indices, all_neighbor_state_sq = blocked_state_neighbors(
         heldout["states"],
         data.states,
         tuple(float(v) for v in config["krr"]["state_lengthscales"]),
-        int(config["identification"]["state_neighbor_count"]),
+        max(neighbor_counts),
     )
+    neighbor_indices = all_neighbor_indices[:, :primary_neighbor_count]
     action_grid = heldout["action_grid"]
     actions_by_class = {
         "learned": current_policy.values_batch(heldout["states"], action_grid),
@@ -456,9 +486,36 @@ def main() -> None:
         actual_secants_by_class=secants_by_class,
         radii=tuple(float(v) for v in config["identification"]["action_l2_radii"]),
     )
+    neighbor_rows = []
+    for query_class in ("learned", "behavior"):
+        for count in neighbor_counts:
+            distances = raw_action_locality_metrics(
+                actions_by_class[query_class],
+                data.action_values,
+                all_neighbor_indices[:, :count],
+                action_grid,
+                radii=(),
+            )["d_min"]
+            neighbor_rows.append(
+                {
+                    **metadata,
+                    "query_class": query_class,
+                    "state_neighbor_count": count,
+                    "query_count": len(distances),
+                    "d_min_mean": float(np.mean(distances)),
+                    "d_min_median": float(np.median(distances)),
+                    "d_min_q25": float(np.quantile(distances, 0.25)),
+                    "d_min_q75": float(np.quantile(distances, 0.75)),
+                    "d_min_min": float(np.min(distances)),
+                    "d_min_max": float(np.max(distances)),
+                }
+            )
     _atomic_frame(query, output / "query_metrics.parquet")
     _atomic_frame(secant, output / "secant_metrics.parquet")
     _atomic_frame(spectrum, output / "representation_spectrum.parquet")
+    _atomic_frame(
+        pd.DataFrame(neighbor_rows), output / "neighbor_sensitivity.parquet"
+    )
     _atomic_npz(
         output / "query_actions.npz",
         states=heldout["states"],
@@ -474,8 +531,9 @@ def main() -> None:
     )
     _atomic_npz(
         output / "state_neighbors.npz",
-        indices=neighbor_indices,
-        squared_distances=neighbor_state_sq,
+        indices=all_neighbor_indices,
+        squared_distances=all_neighbor_state_sq,
+        primary_count=np.asarray(primary_neighbor_count, dtype=np.int64),
     )
     atomic_json(
         output / "analysis_metadata.json",
@@ -490,6 +548,7 @@ def main() -> None:
                 "heldout_seed_namespace"
             ],
             "heldout_seed": int(heldout["derived_seed"]),
+            "heldout_design": heldout["design"],
             "paper_split": config["identification"]["paper_split"],
             "smoke_query_rows": args.smoke_query_rows,
             "fixed_n_all_lambda_view": int(task["n_transitions"]) == fixed_n,
@@ -499,9 +558,12 @@ def main() -> None:
             **checkpoint_provenance,
         },
     )
-    paper_query = query[(query["split"] == "B") & (query["query_class"] == "learned")]
+    paper_split = config["identification"]["paper_split"]
+    paper_query = query[
+        (query["split"] == paper_split) & (query["query_class"] == "learned")
+    ]
     paper_secant = secant[
-        (secant["split"] == "B") & (secant["query_class"] == "learned")
+        (secant["split"] == paper_split) & (secant["query_class"] == "learned")
     ].iloc[0]
     tracker = init_offline_wandb(
         output_root=output,
@@ -540,6 +602,7 @@ def main() -> None:
             "query_metrics.parquet",
             "secant_metrics.parquet",
             "representation_spectrum.parquet",
+            "neighbor_sensitivity.parquet",
             "query_actions.npz",
             "state_neighbors.npz",
             "analysis_metadata.json",
