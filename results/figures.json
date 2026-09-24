@@ -5,6 +5,7 @@
     "generator": "python scripts/generate_simulation_figures.py",
     "kind": "figure",
     "label": "fig:main-sample-behavior",
+    "manuscript_filename": "fig01_adafnn_main.pdf",
     "model_or_checkpoint": "M20 policy",
     "scope": "main",
     "source_document": "Main text: experiments",
@@ -22,9 +23,10 @@
     "generator": "python scripts/generate_simulation_figures.py",
     "kind": "figure",
     "label": "fig:krr-sample-value",
+    "manuscript_filename": "figS01_krr_value.pdf",
     "model_or_checkpoint": "M20 policy",
     "scope": "appendix",
-    "source_document": "Appendix: experimental details",
+    "source_document": "Appendix: additional AdaFNN and KRR results",
     "source_inputs": [
       "results/source/tuning_candidate_values.csv",
       "results/source/reporting_values.csv"
@@ -37,9 +39,10 @@
     "generator": "python scripts/generate_simulation_figures.py",
     "kind": "figure",
     "label": "fig:paired-return-difference",
+    "manuscript_filename": "figS06_paired_return_difference.pdf",
     "model_or_checkpoint": "M20 policy",
     "scope": "appendix",
-    "source_document": "Appendix: experimental details",
+    "source_document": "Appendix: additional AdaFNN and KRR results",
     "source_inputs": [
       "results/source/reporting_values.csv",
       "results/source/constant_returns.csv"
@@ -52,9 +55,10 @@
     "generator": "python scripts/generate_simulation_figures.py",
     "kind": "figure",
     "label": "fig:krr-policy-action-diagnostics",
+    "manuscript_filename": "figS03_krr_identification.pdf",
     "model_or_checkpoint": "Q19/Q20",
     "scope": "appendix",
-    "source_document": "Appendix: experimental details",
+    "source_document": "Appendix: empirical locality and critic differences",
     "source_inputs": [
       "results/source/identification_proxy_per_fit.csv"
     ],
@@ -66,6 +70,7 @@
     "generator": "python scripts/generate_simulation_figures.py",
     "kind": "figure",
     "label": "fig:adafnn-neighbor-sensitivity",
+    "manuscript_filename": "figS08_adafnn_neighbor_sensitivity.pdf",
     "model_or_checkpoint": "Q19/Q20",
     "scope": "appendix",
     "source_document": "Appendix: empirical locality and critic differences",
@@ -80,9 +85,10 @@
     "generator": "python scripts/generate_simulation_figures.py",
     "kind": "figure",
     "label": "fig:absolute-critic-energies",
+    "manuscript_filename": "figS07_critic_update_energies.pdf",
     "model_or_checkpoint": "Q19/Q20",
     "scope": "appendix",
-    "source_document": "Appendix: experimental details",
+    "source_document": "Appendix: empirical locality and critic differences",
     "source_inputs": [
       "results/source/identification_proxy_per_fit.csv"
     ],

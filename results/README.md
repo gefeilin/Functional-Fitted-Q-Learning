@@ -46,16 +46,22 @@ fit-level quantities needed to reproduce the reported figures.
 ## Figures
 
 Run `python scripts/generate_simulation_figures.py` from the repository root.
-Each figure is written to `outputs/figures/` in PDF and PNG format.
+The repository contains exactly the six experimental figures used in the paper.
+Each figure is written to `outputs/figures/` in PDF and PNG format; the PDF is
+the manuscript asset and the PNG supports browser preview and pixel validation.
 
-| Filename | Content |
-| --- | --- |
-| `main_figure` | AdaFNN value, action locality, and adjacent-critic energy ratio |
-| `krr_value` | KRR return versus sample size |
-| `krr_identification` | KRR counterparts of the main identification diagnostics |
-| `neighbor_sensitivity` | AdaFNN action locality for k=16, 32, 64, and 128 |
-| `paired_value_difference` | Within-seed functional minus constant-action return |
-| `critic_update_energies` | Separate graph and logged-design critic energies |
+| Repository artifact | Manuscript file | Content |
+| --- | --- | --- |
+| `main_figure` | `fig01_adafnn_main.pdf` | AdaFNN value, action locality, and adjacent-critic energy ratio |
+| `krr_value` | `figS01_krr_value.pdf` | KRR return versus sample size |
+| `paired_value_difference` | `figS06_paired_return_difference.pdf` | Within-seed functional minus constant-action return |
+| `neighbor_sensitivity` | `figS08_adafnn_neighbor_sensitivity.pdf` | AdaFNN action locality for k=16, 32, 64, and 128 |
+| `krr_identification` | `figS03_krr_identification.pdf` | KRR counterparts of the main identification diagnostics |
+| `critic_update_energies` | `figS07_critic_update_energies.pdf` | Separate graph and logged-design critic energies |
+
+The mapping is also recorded in `results/figures.json`. Files in
+`results/reference/figures/` are the reference renderings used by the automated
+result check; no additional experimental figure is included.
 
 The full n=8,000 coefficient sweep is available in the per-run tables. Numeric
 figure summaries are written to `outputs/tables/`; `reference/` holds the paper

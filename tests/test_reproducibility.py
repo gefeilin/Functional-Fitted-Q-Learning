@@ -1,5 +1,6 @@
 """Fast CPU contracts: paper grid, tuning isolation, and seed-level statistics."""
 
+import json
 import unittest
 import yaml
 import numpy as np
@@ -174,6 +175,35 @@ class ReleasedIdentificationTests(unittest.TestCase):
         self.assertTrue(
             self.neighbor.query_count.eq(self.neighbor.n_transitions).all()
         )
+
+
+class PaperFigureRegistryTests(unittest.TestCase):
+    def test_registry_contains_only_manuscript_figures(self):
+        root = project_root()
+        registry = json.loads((root / "results/figures.json").read_text())
+        expected = {
+            "main_figure": "fig01_adafnn_main.pdf",
+            "krr_value": "figS01_krr_value.pdf",
+            "paired_value_difference": "figS06_paired_return_difference.pdf",
+            "neighbor_sensitivity": "figS08_adafnn_neighbor_sensitivity.pdf",
+            "krr_identification": "figS03_krr_identification.pdf",
+            "critic_update_energies": "figS07_critic_update_energies.pdf",
+        }
+        observed = {
+            item["artifact_id"]: item["manuscript_filename"] for item in registry
+        }
+        self.assertEqual(observed, expected)
+        expected_reference_files = {
+            f"{artifact_id}.{suffix}"
+            for artifact_id in expected
+            for suffix in ("pdf", "png")
+        }
+        reference_files = {
+            path.name
+            for path in (root / "results/reference/figures").iterdir()
+            if path.is_file()
+        }
+        self.assertEqual(reference_files, expected_reference_files)
 
 
 if __name__ == "__main__":
