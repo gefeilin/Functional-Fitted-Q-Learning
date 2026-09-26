@@ -152,6 +152,7 @@ results/source/           Per-run paper results and fit-level diagnostics
 results/reference/        Paper figures and numerical summaries
 docs/                     Experimental details and running instructions
 tests/                    Tests for settings, selection, statistics, and resume
+.github/workflows/        CPU analysis and small-training checks
 outputs/                  Generated figures and tables
 ```
 
@@ -188,6 +189,11 @@ training and interrupted-resume test, use the training environment:
 ```bash
 python -m functional_fitted_q smoke
 ```
+
+GitHub Actions runs the saved-result workflow in an analysis environment without
+PyTorch, and the example, training tests, and interrupted-resume checks in a
+separate CPU environment with PyTorch. These checks exercise the small examples
+and supplied results; the full paper training grid is a separate workflow.
 
 ## Citation and license
 
