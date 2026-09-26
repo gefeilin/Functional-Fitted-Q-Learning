@@ -1,3 +1,10 @@
+"""State-dependent spline policies, with paper dimension p_u stored as k.
+
+The seven features z(s) map a (7, p_u) parameter matrix C to spline
+coefficients. Paper fits use BoundedCoefficientBSplinePolicy: coefficient
+bounds preserve smooth splines without clipping the resulting curve.
+"""
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -6,6 +13,7 @@ from scipy.interpolate import BSpline
 
 
 def policy_state_features(state: np.ndarray) -> np.ndarray:
+    """Return z(s), using omega/8 to scale the velocity feature."""
     cos_theta, sin_theta, omega = np.asarray(state, dtype=np.float64)
     w = omega / 8.0
     return np.array(
@@ -43,6 +51,8 @@ def open_uniform_knots(k: int, degree: int = 3) -> np.ndarray:
 
 @dataclass
 class BSplinePolicy:
+    """Pointwise-clipped variant; paper fits use the bounded-coefficient class."""
+
     parameter_matrix: np.ndarray
     degree: int = 3
 
@@ -59,7 +69,7 @@ class BSplinePolicy:
         ]
 
     def coefficients(self, state: np.ndarray) -> np.ndarray:
-        """Latent, unconstrained B-spline coefficients C^T phi(s)."""
+        """Latent, unconstrained B-spline coefficients C^T z(s)."""
         return self.parameter_matrix.T @ policy_state_features(state)
 
     def basis_matrix(self, u: np.ndarray, derivative: int = 0) -> np.ndarray:
@@ -100,7 +110,11 @@ class BSplinePolicy:
 
 @dataclass
 class BoundedCoefficientBSplinePolicy:
-    """Bounded-coefficient spline policy with no pointwise clipping."""
+    """Implement pi_C(s)(u) = B_pu(u)^T [2*tanh(C^T z(s))].
+
+    Cubic B-splines are nonnegative and sum to one on [0, 1], so bounding
+    each coefficient in [-2, 2] bounds the entire torque curve there.
+    """
 
     parameter_matrix: np.ndarray
     degree: int = 3
@@ -125,6 +139,7 @@ class BoundedCoefficientBSplinePolicy:
         return 2.0 * np.tanh(self.parameter_matrix.T @ policy_state_features(state))
 
     def coefficients_batch(self, states: np.ndarray) -> np.ndarray:
+        """Return rows c_C(s)^T, with shape (number_of_states, p_u)."""
         return 2.0 * np.tanh(
             policy_state_features_batch(states) @ self.parameter_matrix
         )
@@ -149,6 +164,7 @@ class BoundedCoefficientBSplinePolicy:
         )
 
     def roughness(self, states: np.ndarray, quadrature_size: int = 257) -> float:
+        """Grid approximation for inspection; training uses exact W_pu instead."""
         grid = np.linspace(0.0, 1.0, quadrature_size)
         second_basis = self.basis_matrix(grid, derivative=2)
         second = self.coefficients_batch(states) @ second_basis.T

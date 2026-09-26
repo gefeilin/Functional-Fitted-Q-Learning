@@ -13,14 +13,16 @@ python scripts/generate_offline_data.py --seed 0
 
 The output directory is `data/pendulum-seed00/`. It contains NumPy arrays for
 states, functional actions, rewards, next states, subject identifiers, time
-indices, and the subject ordering used for nested samples.
+indices, and the subject ordering used for nested samples. The
+[notation and array mapping](../docs/notation.md#data-and-array-shapes) explains
+how these correspond to the paper's $`n=NT`$ logged transitions.
 
 Generate the full pool of 2,500 subjects with 20 decisions even when fitting a
 smaller sample. Training takes the required subject prefix; changing the initial
 pool size would change random-number consumption.
 
 To obtain fitted models, follow [the training instructions](../docs/reproducibility.md).
-Each completed fit retains Q19 and Q20, including policy parameters. Interrupted
+Each completed paper fit retains $`\widehat Q_{19}`$ and $`\widehat Q_{20}`$, including policy parameters. Interrupted
 runs also keep the optimizer and random-number state needed to resume. Keep
 the data and settings unchanged when resuming, and only load checkpoints from
 sources you trust.

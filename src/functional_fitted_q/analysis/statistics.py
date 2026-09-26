@@ -9,6 +9,11 @@ LAMBDAS = [0.0001, 0.001, 0.01, 0.1, 1.0]
 
 
 def bootstrap_interval(values, *, summary="mean", seed=20260916):
+    """Return a center and pointwise percentile interval across 20 whole fits.
+
+    Query states and Monte Carlo episodes are not independent training
+    replicates. Value uses a mean; locality and energy-ratio panels use medians.
+    """
     values = np.asarray(values, dtype=float)
     if values.shape != (20,) or not np.isfinite(values).all():
         raise ValueError("Exactly 20 finite fit-level values are required")

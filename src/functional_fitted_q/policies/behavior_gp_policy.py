@@ -1,3 +1,10 @@
+"""Behavior actions with persistent subject and fresh decision-level GP effects.
+
+On the action grid, A_it = 2*tanh(0.7*f_ref + 0.15*G_i + 0.35*H_it) under
+the paper defaults. f_ref is the inverse-tanh latent reference signal;
+drawn subject/step effects already include their respective amplitudes.
+"""
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -41,6 +48,7 @@ class BehaviorGPPolicy:
         self._draw_counter = 0
 
     def subject_effect(self, subject_id: int) -> np.ndarray:
+        """Reuse the same GP draw across every decision from one subject."""
         if subject_id not in self._subject_effects:
             self._subject_effects[subject_id] = self.subject_amplitude * (
                 self._subject_chol @ self.subject_rng.standard_normal(self.resolution)
@@ -52,6 +60,8 @@ class BehaviorGPPolicy:
             self.reference.action(state)(self.grid), dtype=np.float64
         )
         safe = np.clip(reference_values / 2.0, -1.0 + 1e-10, 1.0 - 1e-10)
+        # The reference controller returns bounded torque, so invert its
+        # output link before mixing it with Gaussian latent effects.
         latent_reference = np.arctanh(safe)
         step_effect = self.step_amplitude * (
             self._step_chol @ self.step_rng.standard_normal(self.resolution)

@@ -7,37 +7,39 @@ Functional and constant-action results are paired by sample size and master seed
 
 | File | Scientific unit / use |
 |---|---|
-| `tuning_candidate_values.csv` | 1,000 candidates; `tuning_J_normalized_mean` selects lambda |
+| `tuning_candidate_values.csv` | 1,000 candidates; `tuning_J_normalized_mean` selects $`\lambda_{\Omega,n}/s_\Omega`$ |
 | `selected_lambdas.csv` | 200 approximator/n/seed cells; selected fit IDs |
 | `reporting_values.csv` | 360 unique fits; independent `J_normalized_mean` |
 | `constant_returns.csv` | 100 separately trained AdaFNN constants |
 | `identification_proxy_per_fit.csv` | locality, leverage, and adjacent-critic summaries for 360 fits |
-| `neighbor_sensitivity_per_fit.csv` | AdaFNN action-distance summaries for k=16, 32, 64, and 128 |
-| `identification_design.json` | checkpoint pair and independent q=n evaluation design |
+| `neighbor_sensitivity_per_fit.csv` | AdaFNN action-distance summaries for $`k\in\{16,32,64,128\}`$ |
+| `identification_design.json` | checkpoint pair and independent $`q=n`$ evaluation design |
 | `roughness.csv` | returned AdaFNN policy curvature and optimizer floor |
 
-Key columns:
+## Column definitions
+
+Symbols follow the [paper-to-code notation guide](../docs/notation.md).
 
 - `approximator`: `adafnn` or `nystrom_krr`.
-- `n_transitions`: N times T, not the number of subjects.
+- `n_transitions`: $`n=NT`$, the number of transitions; $`N`$ counts subjects.
 - `master_seed`: training/data replicate, integers 0–19.
-- `lambda_dimensionless`: policy-curvature grid coefficient, not critic ridge.
+- `lambda_dimensionless`: $`\lambda_{\Omega,n}/s_\Omega`$, the policy-curvature grid coefficient; this is separate from critic ridge.
 - `selected_sample_size_view`: selected positive coefficient for that cell.
-- `fixed_n_all_lambda_view`: all five candidates at n=8,000, including the selected
+- `fixed_n_all_lambda_view`: all five candidates at $`n=8{,}000`$, including the selected
   one. These flags overlap; do not concatenate both views without deduplication.
 - `evaluation_seed`: independent reporting stream identity for pairing.
 - `d_min_median_learned`, `d_min_median_behavior`: within-fit median functional
-  action L2 distances among the 32 nearest training states.
+  action $`L^2`$ distances among the 32 nearest training states.
 - `relative_representation_leverage_median_learned`: within-fit median
   learned-action leverage normalized by the same fit's median held-out behavior
   leverage.
-- `D_actual_sq`, `G_actual_sq`: actual clipped-critic difference squared energies
-  on logged and policy designs.
-- `actual_graph_design_ratio`: G²/D², with no denominator regularization.
-- `raw_total_curvature_penalty`: uncentered integral of squared second derivative,
-  averaged over training next states; not multiplied by lambda.
+- `D_actual_sq`, `G_actual_sq`: $`D_h^2`$ and $`G_h^2`$, the squared energies of
+  $`h=\widehat Q_{20}-\widehat Q_{19}`$ on logged and learned-policy designs.
+- `actual_graph_design_ratio`: $`\mathsf{ER}_h=G_h^2/D_h^2`$, with no denominator regularization.
+- `raw_total_curvature_penalty`: $`\widehat\Omega_{\mathcal D}(\pi_C)`$, the uncentered integral of squared second derivative,
+  averaged over training next states; the coefficient has not been applied.
 
-Every fit uses one independent cohort with `q = n = N x 20` evaluation states.
+Every fit uses one independent cohort with $`q=n=NT`$ evaluation states, where $`T=20`$.
 Each listed action class is evaluated at these states. Query rows are summarized
 within each fit and are not treated as independent training replicates. Raw query
 tables remain with the full experiment archive; this public package includes the
@@ -55,7 +57,7 @@ the manuscript asset and the PNG supports browser preview and pixel validation.
 | `main_figure` | `fig01_adafnn_main.pdf` | AdaFNN value, action locality, and adjacent-critic energy ratio |
 | `krr_value` | `figS01_krr_value.pdf` | KRR return versus sample size |
 | `paired_value_difference` | `figS06_paired_return_difference.pdf` | Within-seed functional minus constant-action return |
-| `neighbor_sensitivity` | `figS08_adafnn_neighbor_sensitivity.pdf` | AdaFNN action locality for k=16, 32, 64, and 128 |
+| `neighbor_sensitivity` | `figS08_adafnn_neighbor_sensitivity.pdf` | AdaFNN action locality for $`k\in\{16,32,64,128\}`$ |
 | `krr_identification` | `figS03_krr_identification.pdf` | KRR counterparts of the main identification diagnostics |
 | `critic_update_energies` | `figS07_critic_update_energies.pdf` | Separate graph and logged-design critic energies |
 
@@ -63,7 +65,7 @@ The mapping is also recorded in `results/figures.json`. Files in
 `results/reference/figures/` are the reference renderings used by the automated
 result check; no additional experimental figure is included.
 
-The full n=8,000 coefficient sweep is available in the per-run tables. Numeric
+The full $`n=8{,}000`$ coefficient sweep is available in the per-run tables. Numeric
 figure summaries are written to `outputs/tables/`; `reference/` holds the paper
 figures and summaries for comparison. `figures.json` lists the input files for
 each plot.

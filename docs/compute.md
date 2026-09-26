@@ -3,11 +3,11 @@
 ## Figures and notebook
 
 The saved-result analysis runs on CPU with Python 3.12. It does not need PyTorch
-or CUDA. Allow several GB of RAM for reading the query-level table and plotting.
-The released `results/source/` directory is about 76 MiB and the reference
-figures and summaries are about 1.2 MiB. The complete repository is about 81
-MiB before creating an environment or new outputs. The Python environment needs
-additional disk space beyond these files.
+or CUDA. It reads the released per-fit summaries rather than the full query-level
+archive. `results/source/` occupies about 0.65 MiB, and reference figures and
+summaries together occupy about 0.95 MiB in this release. Git history,
+the Python environment, and newly generated outputs require additional space.
+See the [result guide](../results/README.md) for the included tables.
 
 Use the following command to measure the complete CPU artifact workflow on the
 target system:

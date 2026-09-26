@@ -33,6 +33,12 @@ def validate_action_grid(grid: np.ndarray) -> None:
 
 
 def total_curvature_matrix(policy, grid: np.ndarray) -> tuple[np.ndarray, dict]:
+    """Return the paper's W_pu and a record of its quadrature construction.
+
+    The action grid is validated and recorded, but the integral uses the
+    spline knot spans. Two Gauss nodes integrate products of cubic-spline
+    second derivatives exactly because those products are quadratic.
+    """
     grid = np.asarray(grid, dtype=np.float64)
     validate_action_grid(grid)
     if getattr(policy, "degree", None) != 3:
@@ -91,7 +97,11 @@ def total_curvature_matrix(policy, grid: np.ndarray) -> tuple[np.ndarray, dict]:
 def torch_uncentered_total_curvature(
     coefficients: torch.Tensor, matrix: torch.Tensor
 ) -> torch.Tensor:
-    """Average c(s)^T R c(s) over the state axis (second-to-last)."""
+    """Average c(s)^T W_pu c(s) over the second-to-last (state) axis.
+
+    Coefficients have shape (..., number_of_states, p_u); leading axes may
+    index candidate policies. No centering or coefficient weighting occurs.
+    """
     if coefficients.ndim < 2 or coefficients.shape[-2] < 1:
         raise ValueError("curvature coefficients need a nonempty state axis")
     if matrix.shape != (coefficients.shape[-1], coefficients.shape[-1]):

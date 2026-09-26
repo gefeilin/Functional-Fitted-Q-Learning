@@ -30,13 +30,16 @@ the pool size changes the order in which the simulator draws random numbers.
 ## 2. Fit the policies
 
 For example, these commands fit the two functional-action models and the
-constant-action comparator at n=8,000, seed 0:
+constant-action comparator at $`n=8{,}000`$, seed 0:
 
 ```bash
 python scripts/run_functional_fqi.py --approximator adafnn --n 8000 --seed 0 --policy-lambda 0.001
 python scripts/run_functional_fqi.py --approximator krr --n 8000 --seed 0 --policy-lambda 0.001
 python scripts/run_constant_fqi.py --n 8000 --seed 0
 ```
+
+The `--policy-lambda` argument is the dimensionless ratio
+$`\lambda_{\Omega,n}/s_\Omega`$; see [coefficient units](notation.md#policy-objective-and-coefficient-units).
 
 For each approximator, train all five policy coefficients (0.0001, 0.001, 0.01,
 0.1, 1) at each sample size and seed. This gives 500 fits per approximator.
@@ -66,7 +69,7 @@ The chosen run and the five tuning means are saved in
 `runs/selection/adafnn-n8000-seed00/selection.json`. Exact ties favor the smaller
 coefficient. Reporting uses a separate set of 1,000 simulated episodes.
 
-At n=8,000, evaluate every coefficient for the coefficient-sweep panel:
+At $`n=8{,}000`$, evaluate every coefficient for the saved coefficient-sweep tables:
 
 ```bash
 python scripts/evaluate_policy.py --approximator adafnn --n 8000 --seed 0 --policy-lambda 0.001
@@ -75,11 +78,11 @@ python scripts/analyze_identification.py --approximator adafnn --n 8000 --seed 0
 
 Repeat these commands for each coefficient, seed, and approximator. At the other
 sample sizes, evaluate and analyze only the selected coefficient. The analysis
-evaluates Q19 and Q20 on an independent cohort. A cell with `n = N x 20`
-transitions uses `N` new trajectories of 20 decisions, giving `q = n` evaluation
+evaluates $`\widehat Q_{19}`$ and $`\widehat Q_{20}`$ on an independent cohort. A cell with $`n=NT`$
+transitions uses $`N`$ new trajectories of $`T=20`$ decisions, giving $`q=n`$ evaluation
 states. The learned and observed behavior actions are evaluated at each state.
 Across both approximators this requires 360 unique reporting runs and 360
-identification analyses. The selected n=8,000 run is reused in the sample-size
+identification analyses. The selected $`n=8{,}000`$ run is reused in the sample-size
 curve rather than evaluated twice.
 
 ## 4. Collect results and draw figures

@@ -1,3 +1,10 @@
+"""Functional Gaussian-kernel regression in a fixed Nyström feature space.
+
+Action distances use trapezoidal L2 weights. Landmark whitening produces
+features whose primal coefficient vector is stored as alpha. A mean-squared
+regression loss plus varrho*||alpha||^2 gives the n*varrho diagonal below.
+"""
+
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass
@@ -80,6 +87,8 @@ class NystromFunctionalKRR:
         scale = torch.as_tensor(
             self.config.state_lengthscales, dtype=torch.float64, device=self.device
         )
+        # Euclidean distance after sqrt-weighting is the quadrature L2
+        # distance between functions, not distance between raw sample vectors.
         weighted = action_values * torch.sqrt(self._quadrature_weights)[None, :]
         norms = torch.sum(weighted**2, dim=1)
         state_distance = torch.sum(
@@ -198,6 +207,8 @@ class NystromFunctionalKRR:
                 "fixed-ridge KRR requires a numeric ridge; use the GCV critic for ridge=None"
             )
         normal = self._design_features.T @ self._design_features
+        # ridge is the paper's critic coefficient varrho. The loss is averaged
+        # over n rows, whereas this Gram matrix is an unnormalized sum.
         regularization = len(self._design_features) * self.config.ridge
         normal.diagonal().add_(regularization)
         started = time.time()

@@ -11,6 +11,16 @@ critic differences at the learned actions.
 You can reproduce the paper figures from the included results, or generate data
 and train the models yourself. All data are synthetic.
 
+## Reading guide
+
+- [Experiments and equations](docs/experiments.md): environment, FQI, policy
+  objective, evaluation, and diagnostics.
+- [Paper-to-code notation](docs/notation.md): symbols, coefficient units, and
+  distinctions between theoretical errors and empirical diagnostics.
+- [Source-code guide](docs/code-guide.md): a reading order through the Python
+  implementation, with array shapes and entry points.
+- [Reproduction](docs/reproducibility.md): commands for the full experiment.
+
 ## Installation
 
 For training and the quickstart:
@@ -120,8 +130,8 @@ identification statistics are in [docs/experiments.md](docs/experiments.md).
 [Compute requirements](docs/compute.md) and [data availability](data/README.md)
 are documented separately. Fitted paper checkpoints are not included; the saved
 results are sufficient for plotting, while checkpoint-level analysis requires
-retraining. Identification evaluates Q19 and Q20 on an independent cohort of
-`q = n = N x 20` states. The learned and observed behavior actions are evaluated
+retraining. Identification evaluates $`\widehat Q_{19}`$ and $`\widehat Q_{20}`$ on an independent cohort of
+$`q=n=NT`$ states, with $`T=20`$. The learned and observed behavior actions are evaluated
 at each state in this cohort.
 
 ## Tests and analysis notebook

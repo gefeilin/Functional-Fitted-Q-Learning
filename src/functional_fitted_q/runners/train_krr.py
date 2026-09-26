@@ -1,8 +1,10 @@
 """Run one KRR candidate in the oracle-MC lambda/rate design.
 
 The critic ridge is selected by grouped five-fold CV at every FQI iteration.
-The separately named policy lambda uses exactly the same dimensionless,
-uncentered total-curvature objective as the AdaFNN candidate runs.
+The CLI policy lambda is the same dimensionless curvature coefficient used by
+AdaFNN. Before Adam, it is converted to the raw coefficient lambda_{Omega,n}:
+Adam scores Phi_hat - lambda_{Omega,n}*Omega_hat, which is Q_scale times the
+dimensionless objective. This changes score units, not its maximizers.
 """
 
 from __future__ import annotations
@@ -128,6 +130,7 @@ def _restore_critic_metadata(critic, payload: dict) -> None:
 
 
 def _dimensionless_constants(policy, action_grid, q_scale: float, policy_lambda: float):
+    """Convert the CLI ratio lambda_{Omega,n}/s_Omega to raw Q-value units."""
     matrix, receipt = total_curvature_matrix(policy, action_grid)
     eigenvalues = np.linalg.eigvalsh((matrix + matrix.T) / 2.0)
     tolerance = max(1.0, float(eigenvalues[-1])) * 1.0e-12

@@ -1,3 +1,10 @@
+"""Adaptive functional scores followed by a state/action regression network.
+
+The learned basis networks approximate beta_j(u), and action_scores computes
+quadrature approximations of integral a(u)*beta_j(u) du. forward_unclipped
+is the raw fit; forward is the clipped critic deployed in FQI and diagnostics.
+"""
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -86,12 +93,15 @@ class AdaFNNFunctionalCritic(nn.Module):
         )
 
     def action_scores(self, action_values: torch.Tensor) -> torch.Tensor:
+        """Map (..., grid_points) action samples to (..., learned_basis_count)."""
         if action_values.ndim < 2 or action_values.shape[-1] != len(
             self.quadrature_grid
         ):
             raise ValueError(
                 "action_values last dimension must equal quadrature resolution"
             )
+        # Quadrature weights retain the functional L2 inner product; an
+        # unweighted dot product would change scale with grid resolution.
         weighted_basis = self.quadrature_weights[:, None] * self.basis_values()
         return action_values @ weighted_basis
 

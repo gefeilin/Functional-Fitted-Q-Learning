@@ -313,6 +313,8 @@ def run_adafnn_ffqi(
             if pending_segment and pending_segment["iteration"] == iteration
             else None
         )
+        # Algorithm 1: Y_m = R + gamma*Q_hat_{m-1}(S_next, pi_hat_{m-1}).
+        # Q_hat_0 = 0, so the first labels are rewards alone.
         if previous_critic is None:
             targets = np.asarray(dataset.rewards, dtype=np.float32).copy()
         else:
@@ -437,6 +439,8 @@ def run_adafnn_ffqi(
                 }
             )
 
+        # Improvement uses Q_hat_m at logged next states, after critic fitting.
+        # The optimizer keeps Q-subset averaging separate from full-data curvature.
         if policy_kind == "bounded_coefficient_bspline":
             policy, iteration_policy_trace, _ = policy_optimizer.optimize(
                 critic,

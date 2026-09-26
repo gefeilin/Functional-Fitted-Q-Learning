@@ -22,6 +22,9 @@ The reduced integration grid, network sizes, and optimization budgets make this
 a tutorial, not a paper-scale replication. Its sample sizes and evaluation
 horizon differ from the paper.
 
+For a guided reading of the implementation, see the
+[source-code guide](../docs/code-guide.md) and [notation guide](../docs/notation.md).
+
 ## Paper Analysis Notebook
 
 `paper_results.ipynb` explains coefficient selection, bootstrap intervals, action
