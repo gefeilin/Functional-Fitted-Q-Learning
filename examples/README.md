@@ -35,6 +35,10 @@ Execute it with:
 python scripts/run_notebook.py
 ```
 
+The executed copy is saved to `outputs/paper_results.executed.ipynb`, preserving
+the example in this directory. Open the executed copy to read its tables and
+figures. `make notebook` runs the same command.
+
 The notebook requires the analysis environment, not PyTorch or CUDA. Full
 experiment commands are in [the reproduction guide](../docs/reproducibility.md).
 

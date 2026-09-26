@@ -1,5 +1,18 @@
 # Running the experiments
 
+## Choose the scope
+
+| Workflow | What it reproduces | Main outputs |
+| --- | --- | --- |
+| `make reproduce` | The six figures and their numerical summaries from supplied per-fit results | `outputs/figures/`, `outputs/tables/` |
+| `make check` | The figures, saved numerical targets, and the analysis notebook, together with unit tests | The directories above and `outputs/paper_results.executed.ipynb` |
+| `make quickstart` | A small CPU training and evaluation example with reduced settings | `outputs/quickstart/` |
+| Steps 1–4 below | Data generation, all paper fits, independent evaluation, and new figures | `data/`, `runs/`, `outputs/new_training/` |
+
+The first two workflows use only the analysis environment. The training example
+also needs PyTorch. See [installation](../README.md#installation) and
+[compute requirements](compute.md).
+
 If you only want the paper plots, run:
 
 ```bash
@@ -9,8 +22,15 @@ python scripts/generate_simulation_figures.py
 This uses the tables in `results/source/` and writes six figures to
 `outputs/figures/`. It does not need a GPU or fitted model weights.
 `python scripts/run_notebook.py` runs the same analysis with intermediate tables
-and explanations. To compare the generated numbers with the supplied paper
-summaries, run `python scripts/verify_results.py` after plotting.
+and explanations, saving an executed copy to `outputs/paper_results.executed.ipynb`.
+To compare the generated numbers and PNG figures with the supplied paper
+results, run `python scripts/verify_results.py` after plotting, or use
+`make verify` to perform both steps. `make check` also runs the tests and notebook.
+
+The result comparison uses a numerical tolerance of `rtol=atol=1e-12` for
+tabulated values and exact pixels for the six PNG figures. Use the pinned
+analysis environment for this comparison. A different plotting stack can
+change fonts or rasterization even when the estimates agree.
 
 The remaining sections describe training from scratch. Use the full environment
 from the README and an allocated GPU for fitting.
@@ -109,3 +129,5 @@ Use `--runs runs/my_experiment` when changing training settings so that new
 outputs do not overwrite an existing fit. The resume checks compare the saved
 settings and file sizes; keep the original data and code when continuing a run.
 Numerical results from a new fit can differ across GPUs and library versions.
+The strict saved-result comparison above is for reproducing the supplied tables
+and figures, rather than a tolerance for independently retrained models.

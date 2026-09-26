@@ -6,6 +6,21 @@ and policy improvement, then evaluates the returned policy. The paper settings
 come from [`configs/paper_simulation.yaml`](../configs/paper_simulation.yaml).
 The [notation guide](notation.md) maps the symbols below to array names.
 
+## From mathematical objects to numerical code
+
+| Object | Experimental implementation | Interpretation |
+| --- | --- | --- |
+| A functional action | Values on a 128-point grid; a learned policy uses 12 cubic B-splines | The simulator and critics work with a finite numerical representation of a function. |
+| Integration within a decision | RK4 integration for dynamics; quadrature for action projections and distances | The integration grid is part of the experiment configuration. |
+| A fitted critic | AdaFNN training or subject-grouped Nyström KRR | Network optimization, landmark rank, and ridge selection specify the regression procedure. |
+| Policy improvement | CMA-ES for AdaFNN; restarted Adam for KRR | Finite optimization budgets and objective floors do not certify a global maximizer. |
+| Policy regularity | Empirical integrated squared curvature | Its connection to the theory's policy norm is conditional; the penalties are not identical. |
+| Error-transfer diagnostics | One adjacent-critic difference on logged and learned-policy designs | These summaries do not estimate the uniform population coverage constant. |
+
+The [experiment description](experiments.md) gives the numerical settings;
+the [notation guide](notation.md#theoretical-error-transfer-is-a-different-object)
+explains the distinction between theoretical errors and the empirical diagnostic.
+
 ## Data and environment
 
 1. [`data.py`](../src/functional_fitted_q/data.py) stores the logged tuples and

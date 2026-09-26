@@ -9,15 +9,36 @@ summaries together occupy about 0.95 MiB in this release. Git history,
 the Python environment, and newly generated outputs require additional space.
 See the [result guide](../results/README.md) for the included tables.
 
-Use the following command to measure the complete CPU artifact workflow on the
-target system:
+## CPU examples
+
+The following wall times were measured once on an Apple M2 with 16 GiB memory,
+macOS 26.5.2, and Python 3.12.3. The environment was created from
+`requirements-analysis.lock.txt`; the training examples additionally used
+PyTorch 2.5.1 on CPU, with four PyTorch threads. These are small-workflow timings,
+not estimates for the full experiment.
+
+| Command | Measured wall time | Work performed |
+| --- | --- | --- |
+| `make check` | 37.2 s | Tests without PyTorch, six figures, numeric and pixel comparisons, and the seven-cell notebook |
+| `make quickstart` | 3.0 s | Generate 30 transitions, fit two AdaFNN FQI iterations, and evaluate the policy |
+| `make smoke` | 2.8 s | Small AdaFNN and KRR computations, constant-action fitting, and interrupted-resume checks |
+
+Times include process startup and writing outputs, but exclude dependency
+installation. The analysis run used a fresh Python environment with an existing
+Matplotlib cache. The training timings followed environment installation and
+unit tests. Hardware, caches, and concurrent processes affect wall time.
+
+To measure wall time on your own machine:
 
 ```bash
-/usr/bin/time -v make test reproduce verify notebook
+time make check
+time make quickstart
 ```
 
-Wall time is hardware dependent; the repository does not present one machine's
-analysis time as a portable benchmark.
+For peak resident memory as well, use `/usr/bin/time -v make check` on Linux
+(GNU time), or `/usr/bin/time -l make check` on macOS. The reported memory and
+time cover this CPU workflow; use a GPU profiler or scheduler accounting for
+full-training resource measurements.
 
 ## Training
 
