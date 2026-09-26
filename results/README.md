@@ -18,7 +18,8 @@ Functional and constant-action results are paired by sample size and master seed
 
 ## Column definitions
 
-Symbols follow the [paper-to-code notation guide](../docs/notation.md).
+Symbols follow the [experiment description](../docs/experiments.md).
+The [source-code guide](../docs/code-guide.md) maps them to Python names.
 
 - `approximator`: `adafnn` or `nystrom_krr`.
 - `n_transitions`: $`n=NT`$, the number of transitions; $`N`$ counts subjects.

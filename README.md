@@ -16,7 +16,7 @@ and train the models yourself. All data are synthetic.
 The main experimental figure compares functional and constant-action policies,
 then describes action locality and adjacent-critic energies. These empirical
 diagnostics illustrate the experiment; their relationship to the theoretical
-quantities is explained in the [notation guide](docs/notation.md).
+quantities is explained in the [experiment description](docs/experiments.md#relation-to-theoretical-error-transfer).
 
 ## Choose a starting point
 
@@ -37,11 +37,9 @@ The saved-result workflows need no dataset download or fitted checkpoints.
 ## Reading guide
 
 - [Experiments and equations](docs/experiments.md): environment, FQI, policy
-  objective, evaluation, and diagnostics.
-- [Paper-to-code notation](docs/notation.md): symbols, coefficient units, and
-  distinctions between theoretical errors and empirical diagnostics.
+  objective and coefficient units, evaluation, and the interpretation of diagnostics.
 - [Source-code guide](docs/code-guide.md): a reading order through the Python
-  implementation, with array shapes and entry points.
+  implementation, with variable mappings, array shapes, and entry points.
 - [Reproduction](docs/reproducibility.md): commands for the full experiment.
 
 ## Installation

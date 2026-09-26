@@ -6,7 +6,8 @@ introduced so that critic value and curvature have comparable numerical scale.
 
 lambda_dimensionless is the paper's lambda_{Omega,n}/s_Omega, not its raw
 curvature multiplier or the theoretical RKHS coefficient lambda_{pi,n}.
-See docs/notation.md for the conversion and the subset/full-state distinction.
+See docs/experiments.md#objective-and-coefficient-units for the conversion
+and the subset/full-state distinction.
 """
 
 from __future__ import annotations

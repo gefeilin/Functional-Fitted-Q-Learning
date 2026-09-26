@@ -23,7 +23,8 @@ a tutorial, not a paper-scale replication. Its sample sizes and evaluation
 horizon differ from the paper.
 
 For a guided reading of the implementation, see the
-[source-code guide](../docs/code-guide.md) and [notation guide](../docs/notation.md).
+[source-code guide](../docs/code-guide.md). The [experiment description](../docs/experiments.md)
+explains the equations and coefficient units.
 
 ## Paper Analysis Notebook
 

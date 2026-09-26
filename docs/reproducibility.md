@@ -59,7 +59,7 @@ python scripts/run_constant_fqi.py --n 8000 --seed 0
 ```
 
 The `--policy-lambda` argument is the dimensionless ratio
-$`\lambda_{\Omega,n}/s_\Omega`$; see [coefficient units](notation.md#policy-objective-and-coefficient-units).
+$`\lambda_{\Omega,n}/s_\Omega`$; see [coefficient units](experiments.md#objective-and-coefficient-units).
 
 For each approximator, train all five policy coefficients (0.0001, 0.001, 0.01,
 0.1, 1) at each sample size and seed. This gives 500 fits per approximator.
