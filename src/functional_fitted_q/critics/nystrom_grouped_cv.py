@@ -254,6 +254,8 @@ class GroupedRidgeCVWorkspace:
                     "nonfinite grouped CV score; no fixed-ridge fallback"
                 )
             score_array = scores.cpu().numpy()
+            # Reverse argmin implements the larger-ridge tie rule. This differs
+            # from policy-return tuning, which prefers the smaller coefficient.
             selected = len(score_array) - 1 - int(np.argmin(score_array[::-1]))
             selected_lambda = float(self.config.lambda_grid[selected])
             projected_full_right = self.full_eigenvectors.T @ total_right

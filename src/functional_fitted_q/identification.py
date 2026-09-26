@@ -1,4 +1,10 @@
-"""Shared representation/locality/secant calculations for the oracle design."""
+"""Empirical locality, feature geometry, and adjacent-critic energy diagnostics.
+
+The actual secant is h = Q_hat_20 - Q_hat_19 using deployed clipped critics.
+D_actual_sq and G_actual_sq are its logged and held-out squared energies;
+actual_graph_design_ratio is the manuscript's ER_h. This realized difference
+is distinct from the fitted-versus-target error family in the coverage theorem.
+"""
 
 from __future__ import annotations
 
@@ -42,6 +48,8 @@ def blocked_state_neighbors(
             ((query[start:stop, None, :] - training[None, :, :]) / scale) ** 2,
             axis=2,
         )
+        # With scales (1,1,2), this is the paper's d_S squared. Stable sorting
+        # resolves distance ties in training-record order.
         selected = np.argsort(squared, axis=1, kind="stable")[:, :count]
         indices[start:stop] = selected
         squared_out[start:stop] = np.take_along_axis(squared, selected, axis=1)
@@ -153,6 +161,8 @@ def representation_identification(
         )
 
     rows = []
+    # Every logged row enters D_h^2. Representation ridge belongs only to
+    # the projected diagnostic; ER_h uses the actual energy without epsilon.
     actual_denominator = float(projection["actual_design_energy"])
     projected_denominator = float(projection["projected_regularized_denominator"])
     for split in split_names:

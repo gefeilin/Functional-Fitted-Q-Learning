@@ -1,3 +1,12 @@
+"""Logged functional-action trajectories and nested subject samples.
+
+Rows flatten the paper's (i, t) indices: states and next_states have shape
+(n, 3), action_values has shape (n, action_grid_points), and rewards has
+shape (n,). Keep subject_ids when splitting data because n = N*T transitions
+are not n independent subjects. See docs/code-guide.md#data-and-array-shapes
+for the symbol mapping.
+"""
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -79,6 +88,7 @@ class OfflineDataset:
     subject_order: np.ndarray
 
     def subset_subjects(self, count: int) -> "OfflineDataset":
+        """Keep a prefix of whole subjects, preserving the nested sample design."""
         selected = self.subject_order[:count]
         mask = np.isin(self.subject_ids, selected)
         return OfflineDataset(

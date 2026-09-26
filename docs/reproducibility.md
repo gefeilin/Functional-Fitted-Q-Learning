@@ -1,5 +1,18 @@
 # Running the experiments
 
+## Choose the scope
+
+| Workflow | What it reproduces | Main outputs |
+| --- | --- | --- |
+| `make reproduce` | The six figures and their numerical summaries from supplied per-fit results | `outputs/figures/`, `outputs/tables/` |
+| `make check` | The figures, saved numerical targets, and the analysis notebook, together with unit tests | The directories above and `outputs/paper_results.executed.ipynb` |
+| `make quickstart` | A small CPU training and evaluation example with reduced settings | `outputs/quickstart/` |
+| Steps 1–4 below | Data generation, all paper fits, independent evaluation, and new figures | `data/`, `runs/`, `outputs/new_training/` |
+
+The first two workflows use only the analysis environment. The training example
+also needs PyTorch. See [installation](../README.md#installation) and
+[compute requirements](compute.md).
+
 If you only want the paper plots, run:
 
 ```bash
@@ -9,8 +22,15 @@ python scripts/generate_simulation_figures.py
 This uses the tables in `results/source/` and writes six figures to
 `outputs/figures/`. It does not need a GPU or fitted model weights.
 `python scripts/run_notebook.py` runs the same analysis with intermediate tables
-and explanations. To compare the generated numbers with the supplied paper
-summaries, run `python scripts/verify_results.py` after plotting.
+and explanations, saving an executed copy to `outputs/paper_results.executed.ipynb`.
+To compare the generated numbers and PNG figures with the supplied paper
+results, run `python scripts/verify_results.py` after plotting, or use
+`make verify` to perform both steps. `make check` also runs the tests and notebook.
+
+The result comparison uses a numerical tolerance of `rtol=atol=1e-12` for
+tabulated values and exact pixels for the six PNG figures. Use the pinned
+analysis environment for this comparison. A different plotting stack can
+change fonts or rasterization even when the estimates agree.
 
 The remaining sections describe training from scratch. Use the full environment
 from the README and an allocated GPU for fitting.
@@ -30,13 +50,16 @@ the pool size changes the order in which the simulator draws random numbers.
 ## 2. Fit the policies
 
 For example, these commands fit the two functional-action models and the
-constant-action comparator at n=8,000, seed 0:
+constant-action comparator at $`n=8{,}000`$, seed 0:
 
 ```bash
 python scripts/run_functional_fqi.py --approximator adafnn --n 8000 --seed 0 --policy-lambda 0.001
 python scripts/run_functional_fqi.py --approximator krr --n 8000 --seed 0 --policy-lambda 0.001
 python scripts/run_constant_fqi.py --n 8000 --seed 0
 ```
+
+The `--policy-lambda` argument is the dimensionless ratio
+$`\lambda_{\Omega,n}/s_\Omega`$; see [coefficient units](experiments.md#objective-and-coefficient-units).
 
 For each approximator, train all five policy coefficients (0.0001, 0.001, 0.01,
 0.1, 1) at each sample size and seed. This gives 500 fits per approximator.
@@ -66,7 +89,7 @@ The chosen run and the five tuning means are saved in
 `runs/selection/adafnn-n8000-seed00/selection.json`. Exact ties favor the smaller
 coefficient. Reporting uses a separate set of 1,000 simulated episodes.
 
-At n=8,000, evaluate every coefficient for the coefficient-sweep panel:
+At $`n=8{,}000`$, evaluate every coefficient for the saved coefficient-sweep tables:
 
 ```bash
 python scripts/evaluate_policy.py --approximator adafnn --n 8000 --seed 0 --policy-lambda 0.001
@@ -75,11 +98,11 @@ python scripts/analyze_identification.py --approximator adafnn --n 8000 --seed 0
 
 Repeat these commands for each coefficient, seed, and approximator. At the other
 sample sizes, evaluate and analyze only the selected coefficient. The analysis
-evaluates Q19 and Q20 on an independent cohort. A cell with `n = N x 20`
-transitions uses `N` new trajectories of 20 decisions, giving `q = n` evaluation
+evaluates $`\widehat Q_{19}`$ and $`\widehat Q_{20}`$ on an independent cohort. A cell with $`n=NT`$
+transitions uses $`N`$ new trajectories of $`T=20`$ decisions, giving $`q=n`$ evaluation
 states. The learned and observed behavior actions are evaluated at each state.
 Across both approximators this requires 360 unique reporting runs and 360
-identification analyses. The selected n=8,000 run is reused in the sample-size
+identification analyses. The selected $`n=8{,}000`$ run is reused in the sample-size
 curve rather than evaluated twice.
 
 ## 4. Collect results and draw figures
@@ -106,3 +129,5 @@ Use `--runs runs/my_experiment` when changing training settings so that new
 outputs do not overwrite an existing fit. The resume checks compare the saved
 settings and file sizes; keep the original data and code when continuing a run.
 Numerical results from a new fit can differ across GPUs and library versions.
+The strict saved-result comparison above is for reproducing the supplied tables
+and figures, rather than a tolerance for independently retrained models.

@@ -11,23 +11,65 @@ critic differences at the learned actions.
 You can reproduce the paper figures from the included results, or generate data
 and train the models yourself. All data are synthetic.
 
+![AdaFNN results: policy value, local action distance, and adjacent-critic energy across sample sizes](results/reference/figures/main_figure.png)
+
+The main experimental figure compares functional and constant-action policies,
+then describes action locality and adjacent-critic energies. These empirical
+diagnostics illustrate the experiment; their relationship to the theoretical
+quantities is explained in the [experiment description](docs/experiments.md#relation-to-theoretical-error-transfer).
+
+## Choose a starting point
+
+After [installing the environment](#installation), run commands from the
+repository root.
+
+| Goal | Command or guide | Requirements | Output |
+| --- | --- | --- | --- |
+| Try a small training example | `make quickstart` | CPU and PyTorch | `outputs/quickstart/` |
+| Reproduce all six paper figures | `make reproduce` | CPU analysis environment | `outputs/figures/` and `outputs/tables/` |
+| Recompute and check the supplied results | `make check` | CPU analysis environment | Figures, checked numerical summaries, and `outputs/paper_results.executed.ipynb` |
+| Retrain the paper experiments | [Full training instructions](docs/reproducibility.md#1-generate-the-offline-data) | Training environment and a CUDA GPU | `data/`, `runs/`, then `outputs/new_training/` |
+
+The saved-result workflows need no dataset download or fitted checkpoints.
+[Compute requirements](docs/compute.md) describe the scale of each workflow;
+[data and model availability](data/README.md) list what is included.
+
+## Reading guide
+
+- [Experiments and equations](docs/experiments.md): environment, FQI, policy
+  objective and coefficient units, evaluation, and the interpretation of diagnostics.
+- [Source-code guide](docs/code-guide.md): a reading order through the Python
+  implementation, with variable mappings, array shapes, and entry points.
+- [Reproduction](docs/reproducibility.md): commands for the full experiment.
+
 ## Installation
 
-For training and the quickstart:
+Use Python 3.12. For training and the quickstart:
 
 ```bash
 conda env create -f environment.yml
 conda activate functional-fitted-q-theory
 ```
 
-For figures and the analysis notebook only, a CPU environment is enough:
+For figures and the analysis notebook only, create a CPU environment with the
+pinned analysis dependencies:
 
 ```bash
 python3.12 -m venv .venv
 source .venv/bin/activate
-pip install -r requirements.txt
-pip install --no-deps -e .
+python -m pip install -r requirements-analysis.lock.txt
+python -m pip install --no-deps -e .
 ```
+
+To also run the small training example in this environment, install
+`torch==2.5.1`. On Linux, the CPU-only wheel is sufficient:
+
+```bash
+python -m pip install torch==2.5.1 --index-url https://download.pytorch.org/whl/cpu
+```
+
+On macOS, use `python -m pip install torch==2.5.1` instead. Full training uses
+the Conda environment above on a machine with a CUDA GPU.
 
 Use a separate environment if another installation provides the
 `functional_fitted_q` package. The training environment includes PyTorch;
@@ -58,8 +100,12 @@ for the figure list and data columns.
 For a clean end-to-end check of the supplied artifact, run:
 
 ```bash
-make test reproduce verify notebook
+make check
 ```
+
+This runs the tests, reconstructs and compares the figures and numerical
+summaries, then executes the analysis notebook. The executed notebook is saved
+under `outputs/`; the example notebook stays unchanged.
 
 ## Training
 
@@ -104,6 +150,7 @@ results/source/           Per-run paper results and fit-level diagnostics
 results/reference/        Paper figures and numerical summaries
 docs/                     Experimental details and running instructions
 tests/                    Tests for settings, selection, statistics, and resume
+.github/workflows/        CPU analysis and small-training checks
 outputs/                  Generated figures and tables
 ```
 
@@ -120,25 +167,31 @@ identification statistics are in [docs/experiments.md](docs/experiments.md).
 [Compute requirements](docs/compute.md) and [data availability](data/README.md)
 are documented separately. Fitted paper checkpoints are not included; the saved
 results are sufficient for plotting, while checkpoint-level analysis requires
-retraining. Identification evaluates Q19 and Q20 on an independent cohort of
-`q = n = N x 20` states. The learned and observed behavior actions are evaluated
+retraining. Identification evaluates $`\widehat Q_{19}`$ and $`\widehat Q_{20}`$ on an independent cohort of
+$`q=n=NT`$ states, with $`T=20`$. The learned and observed behavior actions are evaluated
 at each state in this cohort.
 
 ## Tests and analysis notebook
 
 ```bash
 python -m unittest discover -s tests -v
-python scripts/verify_results.py
-python scripts/run_notebook.py
+make verify
+make notebook
 ```
 
-Run the figure command before `verify_results.py`. The notebook walks through
+`make verify` regenerates the figures before comparing them with the supplied
+results. The notebook walks through
 coefficient selection, bootstrap intervals, and critic diagnostics. For a short
 training and interrupted-resume test, use the training environment:
 
 ```bash
 python -m functional_fitted_q smoke
 ```
+
+GitHub Actions runs the saved-result workflow in an analysis environment without
+PyTorch, and the example, training tests, and interrupted-resume checks in a
+separate CPU environment with PyTorch. These checks exercise the small examples
+and supplied results; the full paper training grid is a separate workflow.
 
 ## Citation and license
 

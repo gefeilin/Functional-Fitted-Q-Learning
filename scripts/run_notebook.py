@@ -1,4 +1,4 @@
-"""Execute the analysis notebook using this interpreter at the project root."""
+"""Execute the analysis notebook and save a separate copy under outputs/."""
 
 from pathlib import Path
 import json
@@ -50,8 +50,10 @@ with tempfile.TemporaryDirectory(prefix="kernel-", dir=cache) as directory:
     finally:
         if manager.has_kernel:
             manager.shutdown_kernel(now=True)
-nbformat.write(notebook, path)
 code = [c for c in notebook.cells if c.cell_type == "code"]
 if any(o.output_type == "error" for c in code for o in c.outputs):
     raise AssertionError("Notebook contains error output")
-print(f"Executed {len(code)} code cells: {path.relative_to(root)}")
+# Preserve the readable example when running locally or in continuous integration.
+executed_path = root / "outputs/paper_results.executed.ipynb"
+nbformat.write(notebook, executed_path)
+print(f"Executed {len(code)} code cells: {executed_path.relative_to(root)}")

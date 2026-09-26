@@ -1,3 +1,11 @@
+"""Reusable checkpointed FQI with a fixed Nyström design.
+
+Each iteration builds Bellman labels from the previous critic/policy, solves
+for new critic coefficients, and improves the policy on logged next states.
+The paper CLI uses the specialized loop in runners/train_krr.py; this module
+also supports reusable optimizer and resume workflows.
+"""
+
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass
@@ -248,6 +256,8 @@ def run_nystrom_ffqi(
             segment if segment and int(segment["iteration"]) == iteration else None
         )
         if pending is None:
+            # With Q_hat_0 = 0 the first target is R; later targets use the
+            # previous clipped prediction at the previous policy's next action.
             if iteration == 1:
                 targets = np.asarray(dataset.rewards, dtype=np.float64)
             else:

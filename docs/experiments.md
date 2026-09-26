@@ -3,7 +3,7 @@
 We study how functional-action policies perform as the offline sample grows,
 and how critic updates behave at learned actions far from the logged actions.
 AdaFNN results appear in the main text; the KRR counterparts are in the appendix.
-The coefficient sweep at n=8,000 shows how policy regularization changes return.
+The coefficient sweep at $`n=8{,}000`$ shows how policy regularization changes return.
 
 This page describes the model and numerical settings. The main configuration
 is `configs/paper_simulation.yaml`. See [the running guide](reproducibility.md)
@@ -11,57 +11,87 @@ for commands and [the result guide](../results/README.md) for figure inputs.
 
 ## Functional-action Pendulum
 
-The state is `(cos(theta), sin(theta), omega)`. At each decision the policy chooses
-a torque function a(u), u in [0,1], which acts for 0.5 physical time units. In
+The state is $`S=(\cos\theta,\sin\theta,\omega)`$. At each decision the policy chooses
+a torque function $`a(u)`$, $`u\in[0,1]`$, which acts for 0.5 physical time units. In
 normalized action time, the deterministic dynamics are
 
-\[
+```math
 d\theta/du=0.5\omega,\qquad
 d\omega/du=0.5\{15\sin\theta+3a(u)\}.
-\]
+```
 
 Mass and length are one, gravity is 10, torque is bounded by 2, and angular
 velocity by 8. Fourth-order Runge–Kutta uses 128 substeps. The angle and velocity
 noise scales are 0.03 and 0.05. The simulator wraps angles and enforces velocity
 bounds. The macro-step reward is
 
-\[
-R=1-\frac{\int_0^1[\operatorname{wrap}(\theta(u))^2+
+```math
+R=1-\frac{\int_0^1[\mathrm{wrap}(\theta(u))^2+
 0.1\omega(u)^2+0.001a(u)^2]du}{\pi^2+6.4+0.004}.
-\]
+```
 
-Rewards are clipped to [0,1] to handle numerical roundoff. The integration,
+Rewards are clipped to $`[0,1]`$ to handle numerical roundoff. The integration,
 transition noise, and action interpolation are implemented in
 `src/functional_fitted_q/env/`.
 
 ## Offline data and sample sizes
 
+The logged data are
+
+```math
+\mathcal D=\{(S_{i,t},A_{i,t},R_{i,t},S_{i,t+1}):
+1\le i\le N,\ 1\le t\le T\},\qquad n=NT.
+```
+
 The behavior policy generates smooth torque functions:
 
-\[
-a_{it}(u)=2\tanh\{0.7 f_{\rm ref}(S_{it},u)+0.15G_i(u)+0.35H_{it}(u)\}.
-\]
+```math
+A_{i,t}(u)=2\tanh\{0.7 f_{\rm ref}(S_{i,t},u)+0.15G_i(u)+0.35H_{i,t}(u)\}.
+```
 
-G and H are Matérn-5/2 Gaussian processes with lengthscales 0.5 and 0.25. G is
-shared across a subject's decisions; H is drawn again at each decision. Actions
+$`G_i`$ and $`H_{i,t}`$ are unit-variance Matérn Gaussian processes with smoothness $`5/2`$ with lengthscales 0.5 and 0.25. $`G_i`$ is
+shared across a subject's decisions; $`H_{i,t}`$ is drawn again at each decision. Actions
 are represented on 128 coordinates. The separately calibrated reference
 controller is held fixed; its coefficients are in `configs/reference_policy.yaml`.
+Here $`f_{\rm ref}`$ is the **latent** reference signal: the implementation uses
+$`\mathrm{arctanh}(\mathrm{clip}(a_{\rm ref}/2,-1+10^{-10},1-10^{-10}))`$,
+rather than inserting the bounded reference torque directly into the formula.
 
-For each seed 0–19, generate 2,500 subjects with T=20 decisions. Training uses
-nested prefixes of N=100, 200, 400, 800, and 1,600 subjects, giving
-n=2,000, 4,000, 8,000, 16,000, and 32,000 transitions. Both approximators and the
+For each seed 0–19, generate 2,500 subjects with $`T=20`$ decisions. Training uses
+nested prefixes of $`N\in\{100,200,400,800,1600\}`$ subjects, giving
+$`n=NT\in\{2000,4000,8000,16000,32000\}`$ transitions. Both approximators and the
 constant-action comparator share each seed's data. Keep the full generation
 pool when reproducing the experiment, since its size affects random-number order.
 
+The [data and array mapping](code-guide.md#data-and-array-shapes) explains how
+subject/time indices become rows in Python. Below, $`S_j^+`$ denotes the next state
+of flattened record $`j`$, rather than a new independent sample. Diagnostic states
+$`S_j^{\rm ev}`$ come from a separate behavior cohort.
+
 ## Fitted Q-iteration
 
-Each fit runs M=20 updates with discount gamma=0.95. The regression target uses
-the previous critic and policy. Deployed Q predictions are clipped to [0,20].
+Each fit runs $`M=20`$ updates with discount $`\gamma=0.95`$. With
+$`\widehat Q_0=0`$, the Bellman labels and deployed critic follow Algorithm 1:
+
+```math
+\begin{aligned}
+Y_{i,t,m}&=R_{i,t}+\gamma\widehat Q_{m-1}
+\{S_{i,t+1},\widehat\pi_{m-1}(S_{i,t+1})\},\\
+\widehat Q_m&=\mathrm{clip}_{[0,V_{\max}]}(\widetilde Q_m),\\
+V_{\max}&=(1-\gamma)^{-1}=20.
+\end{aligned}
+```
+
+Here $`\widetilde Q_m`$ is the regression fit before prediction clipping. At the
+first iteration the label is just the observed reward. The continuing Pendulum
+has no terminal-mask term.
 
 ### AdaFNN critic
 
 Four learned action-basis networks have architecture `(1,32,32,1)` with ReLU hidden
-layers. Their integrals against the action use 128-point quadrature. The four
+layers. Their action scores approximate $`\int_0^1a(u)\beta_j(u)\,du`$ using
+128-point trapezoidal quadrature. The learned basis functions change during
+fitting and are distinct from the fixed policy B-splines. The four
 action projections and three state coordinates enter a ReLU network with
 architecture `(7,256,256,256,1)`. The parameter bound is 1.
 
@@ -75,7 +105,7 @@ If the criterion is still unmet, the fit stops with an error.
 ### Nyström KRR critic
 
 The state kernel is Gaussian with coordinate lengthscales (1,1,2). The action
-kernel is Gaussian in quadrature-weighted functional L2 distance, with bandwidth
+kernel is Gaussian in quadrature-weighted functional $`L^2`$ distance, with bandwidth
 equal to the median distance among all unordered pairs of training actions.
 The calculation uses disk-backed distances when needed.
 
@@ -83,52 +113,113 @@ Nyström ranks are 512, 1024, 1536, 2304, and 3584 for the five sample sizes.
 Factorization and solves use float64, jitter 1e-10, relative eigenvalue tolerance
 1e-12, and prediction blocks of 512.
 
+The KRR appendix denotes critic ridge by $`\varrho`$, with regression objective
+
+```math
+\frac1n\sum_{i,t}\{Y_{i,t,m}-f(S_{i,t},A_{i,t})\}^2
++\varrho\|f\|_{\mathcal F}^2.
+```
+
 At every FQI iteration, fivefold subject-grouped CV selects the critic ridge
 from 81 logarithmically spaced values between 1e-12 and 1e4. The fold seed is
 200000. All candidate ridge values use the same Bellman targets; each fold refits
 the ridge coefficients. Scores average unclipped squared prediction errors at
 the subject level. Policy returns are used to tune policy regularization, not
-the critic ridge.
+the critic ridge. Exact CV ties favor the larger critic ridge; policy-return
+selection favors the smaller policy coefficient.
 
 ## Policy and curvature penalty
 
-The functional policy uses K=12 cubic B-splines:
+The functional policy uses $`p_u=12`$ cubic B-splines (the code calls this `k`):
 
-\[
-\pi_C(s)(u)=B(u)^Tc_C(s),\qquad c_C(s)=2\tanh\{z(s)^TC\}.
-\]
+```math
+\pi_C(s)(u)=B_{p_u}(u)^\top c_C(s),\qquad c_C(s)=2\tanh\{C^\top z(s)\}.
+```
 
-The seven state features z(s) are defined in `policies/bspline_policy.py`.
-Bounding the coefficients bounds the torque without clipping the spline
-pointwise. A constant-action policy instead chooses one scalar torque per state
-and holds it throughout the macro-step.
+The seven state features $`z(s)`$ are defined in
+[`policies/bspline_policy.py`](../src/functional_fitted_q/policies/bspline_policy.py).
+Writing $`w=\omega/8`$, they are
+$`z(s)=(1,\sin\theta,\cos\theta,w,w\sin\theta,w\cos\theta,w^2)^\top`$.
+The parameter matrix $`C`$ has shape $`7\times p_u`$; in batch code the row of
+`2*tanh(features @ parameter_matrix)` is $`c_C(s)^\top`$.
+Nonnegative B-splines sum to one, so coefficients in $`[-2,2]`$ bound the entire
+torque function in $`[-2,2]`$ without pointwise clipping. A constant-action policy
+instead chooses one scalar torque per state and holds it throughout the macro-step.
 
 We penalize uncentered integrated squared curvature:
 
-\[
-W=\int_0^1B''(u)B''(u)^Tdu,\qquad
-\widehat\Omega_D(\pi)=\frac1n\sum_j c_C(S_j^+)^TWc_C(S_j^+).
-\]
+```math
+W_{p_u}=\int_0^1B_{p_u}''(u)B_{p_u}''(u)^\top du,\qquad
+\widehat\Omega_{\mathcal D}(\pi_C)
+=\frac1n\sum_{j=1}^n c_C(S_j^+)^\top W_{p_u}c_C(S_j^+).
+```
 
 Two-node Gauss–Legendre quadrature on each knot span integrates this cubic-spline
-curvature exactly up to roundoff. The average uses all n training next states.
-The implemented improvement objective is
+curvature exactly up to roundoff. The average uses all $`n`$ training next states,
+indexed by $`S_j^+`$ after flattening the subject and time indices.
 
-\[
-\widehat\Phi_m(\pi)/20-\ell\widehat\Omega_D(\pi)/\Omega_{\rm scale},
-\qquad \Omega_{\rm scale}=4K\lambda_{\max}(W).
-\]
+### Objective and coefficient units
 
-The grid is ell in {0.0001, 0.001, 0.01, 0.1, 1}. The code calls ell
-`lambda_dimensionless`; the manuscript writes `lambda_{Omega,n}/s_Omega`, where
-`s_Omega=20/Omegascale`. The raw curvature multiplier is therefore
-`ell*20/Omegascale`. This is separate from the critic ridge and the ridge used
-in representation diagnostics.
+For a fixed subset $`\mathcal I_\Phi`$ of those states, define
+
+```math
+\widehat\Phi_m(\pi_C)=\frac{1}{|\mathcal I_\Phi|}
+\sum_{j\in\mathcal I_\Phi}\widehat Q_m\{S_j^+,\pi_C(S_j^+)\}.
+```
+
+The dimensionless improvement objective in the experimental appendix is
+
+```math
+\mathcal J_{\lambda_{\Omega,n},m}(C)
+=\frac{\widehat\Phi_m(\pi_C)}{Q_{\rm scale}}
+-\frac{\lambda_{\Omega,n}}{s_\Omega}
+ \frac{\widehat\Omega_{\mathcal D}(\pi_C)}{\Omega_{\rm scale}(p_u)},
+```
+
+```math
+\begin{aligned}
+Q_{\rm scale}&=(1-\gamma)^{-1}=20,\\
+\Omega_{\rm scale}(p_u)&=4p_u\lambda_{\max}(W_{p_u}),\\
+s_\Omega&=\frac{Q_{\rm scale}}{\Omega_{\rm scale}(p_u)}.
+\end{aligned}
+```
+
+The factor $`4p_u`$ bounds $`\|c_C(s)\|_2^2`$. These scales depend on the spline
+basis and discount, not on observed curvature or the training seed.
+
+The grid is $`\lambda_{\Omega,n}/s_\Omega\in\{10^{-4},10^{-3},10^{-2},10^{-1},1\}`$.
+The code and command-line argument `--policy-lambda` use this **dimensionless
+ratio**, stored as `lambda_dimensionless`. Its raw curvature multiplier is
+
+```math
+\lambda_{\Omega,n}
+=\texttt{lambda\_dimensionless}\,s_\Omega
+=\texttt{lambda\_dimensionless}\,
+  \frac{Q_{\rm scale}}{\Omega_{\rm scale}(p_u)}.
+```
+
+AdaFNN scores the dimensionless objective directly. The KRR Adam optimizer
+scores $`\widehat\Phi_m-\lambda_{\Omega,n}\widehat\Omega_{\mathcal D}`$, which is
+the same objective multiplied by the positive constant $`Q_{\rm scale}`$;
+`train_krr.py` converts the coefficient before calling it. Objective values and
+numerical stopping tolerances must be read in the respective units.
+The two objectives have the same maximizers, but finite-step optimizer paths
+need not be identical.
+
+The experimental curvature penalty is a surrogate for the within-action
+regularity controlled by $`\lambda_{\pi,n}\|\pi\|_{\mathcal H}^2`$ in the theory.
+The paper provides a spectral-envelope connection under stated conditions,
+not an identity between the penalties or their coefficients. The critic ridge
+and representation-diagnostic ridge are separate again. The
+[coefficient mapping](code-guide.md#coefficient-names) lists the Python names
+and their units.
+
+### Policy optimization
 
 AdaFNN policy improvement uses full-covariance CMA-ES with 3 restarts, population
 64, objective budget 2,500, initial sigma 0.5, minimum sigma 1e-5, and candidate
 batch size 8. The Q objective uses a fixed subset of up to 2,048 states; curvature
-still uses all next states. The optimizer also evaluates a state-dependent
+still uses all training next states. The optimizer also evaluates a state-dependent
 constant policy and zero policy, keeping the best objective. The constant-action
 comparator in Figure 1 is a separate fit restricted to constant actions at every
 FQI iteration.
@@ -143,22 +234,25 @@ uses all next states. Details are in `runners/krr_optimizer.py`,
 
 ## Evaluation and uncertainty
 
+The theoretical value is $`J(\pi)=\mathbb E^\pi\sum_{t\ge0}\gamma^tR_t`$.
+The experiment estimates its truncated, normalized counterpart.
+
 For each approximator, sample size, and seed, train all five coefficients.
 Select the largest mean tuning return from 1,000 episodes of horizon 100,
 breaking exact ties toward the smaller coefficient. Evaluate the selected
-policy on 1,000 independent reporting episodes. At n=8,000, report all five
+policy on 1,000 independent reporting episodes. At $`n=8{,}000`$, report all five
 coefficients as well.
 
 Candidates and approximators share random numbers within each tuning or
 reporting stream. The streams are independent, and the constant comparator
 shares the reporting stream. We plot unpenalized normalized discounted return:
 
-\[
-(1-\gamma)\frac1{1000}\sum_e\sum_{t=0}^{99}\gamma^tR_{e,t}.
-\]
+```math
+\widehat J_{\rm normalized}=(1-\gamma)\frac1{1000}\sum_{e=1}^{1000}\sum_{t=0}^{99}\gamma^tR_{e,t}.
+```
 
 The curvature penalty affects training but is not subtracted from reported
-return. The remaining normalized reward tail is at most gamma^100, about 0.00592.
+return. The remaining normalized reward tail is at most $`\gamma^{100}`$, about 0.00592.
 
 Pointwise 95% percentile intervals use 10,000 bootstrap resamples of the 20
 training seeds. Value panels summarize means; locality and critic-ratio panels
@@ -168,27 +262,48 @@ five-sample-size trajectory for each seed. Resampling code is in
 
 ## Critic diagnostics
 
-For each fitted model, Q19 and Q20 are evaluated on an independent cohort of N
-new subjects with T=20 decisions. The cohort therefore contains q=n evaluation
+For each fitted model, $`\widehat Q_{19}`$ and $`\widehat Q_{20}`$ are evaluated on an independent cohort of $`N`$
+new subjects with $`T=20`$ decisions. The cohort therefore contains $`q=n`$ evaluation
 states: 2,000, 4,000, 8,000, 16,000, or 32,000. The learned, previous, observed
 behavior, and reference actions are evaluated at each state in this cohort.
 
-At each query state, take the 32 nearest logged states under the scaled state
-metric. Measure the minimum functional L2 distance from the query action to
-their logged actions. Compare learned-policy and held-out behavior actions.
+At each query state, take the $`k=32`$ nearest logged states under
+
+```math
+d_S(s,s')^2=(s_1-s_1')^2+(s_2-s_2')^2+(s_3-s_3')^2/4.
+```
+
+Writing $`\mathcal N_k(s)`$ for their record indices, measure
+
+```math
+d_k(s,a)=\min_{(i,t)\in\mathcal N_k(s)}
+\left[\int_0^1\{a(u)-A_{i,t}(u)\}^2du\right]^{1/2}.
+```
+
+Ties in state distance retain training-record order. The integral is computed
+on the common action grid with trapezoidal weights. Compare learned-policy and held-out behavior actions.
 The plot summarizes each fit's median distance, then the median across seeds.
 
-For h(s,a)=Q20(s,a)-Q19(s,a), computed with the deployed clipped critics, define
+For $`h=\widehat Q_{20}-\widehat Q_{19}`$, computed with the deployed clipped critics, define
 
-\[
-D^2=\frac1n\sum_{(s,a)\in D}h(s,a)^2,\qquad
-G^2=\frac1q\sum_{j=1}^q h\{S_j^{\rm ev},\pi_{20}(S_j^{\rm ev})\}^2,\qquad q=n,
-C_{\rm adj}=G^2/D^2.
-\]
+```math
+\begin{aligned}
+D_h^2&=\frac1n\sum_{i=1}^N\sum_{t=1}^T h(S_{i,t},A_{i,t})^2,\\
+G_h^2&=\frac1q\sum_{j=1}^q h\{S_j^{\rm ev},\widehat\pi_{20}(S_j^{\rm ev})\}^2.
+\end{aligned}
+```
 
-Every logged transition enters D². We calculate the ratio within each fit and
+```math
+q=n=NT,\qquad \mathsf{ER}_h=\frac{G_h^2}{D_h^2}.
+```
+
+$`D_h^2`$ and $`G_h^2`$ name the two empirical energies for the code mapping;
+the manuscript names their ratio $`\mathsf{ER}_h`$. Every logged transition enters $`D_h^2`$. We calculate the ratio within each fit and
 then summarize across seeds, without adding an epsilon to the denominator.
-The appendix also shows G² and D² separately.
+All selected paper fits have positive logged-design energy.
+The appendix also shows $`G_h^2`$ and $`D_h^2`$ separately. The CSV columns are
+`G_actual_sq`, `D_actual_sq`, and `actual_graph_design_ratio`. The ratio plotted
+is the median of per-fit ratios, not a ratio of the plotted median energies.
 
 Additional diagnostics use AdaFNN's current final hidden features plus bias,
 or whitened Nyström features for KRR. Their design second moment is uncentered.
@@ -196,9 +311,11 @@ Feature leverage is divided by the median held-out behavior leverage within
 the corresponding fit and evaluation cohort. Actual and feature-projected critic
 differences are stored separately because these representations need not capture
 a nonlinear or clipped critic difference exactly.
+Feature-projected ratios have their own regularized denominator and must not
+be substituted for $`\mathsf{ER}_h`$.
 
 AdaFNN restores the two saved critic parameter states directly. KRR restores
-the saved Q19/Q20 coefficient vectors and deterministically reconstructs the
+the saved $`\widehat Q_{19}`$ and $`\widehat Q_{20}`$ coefficient vectors and deterministically reconstructs the
 Nyström feature design needed to evaluate those coefficients; it does not refit
 Bellman targets, ridge coefficients, or policies.
 
@@ -206,3 +323,36 @@ Query rows are summarized within a fit before uncertainty is computed across the
 20 data/training seeds. These plots describe finite-sample action locality and
 realized critic updates. They illustrate the motivation for the theory; they do
 not estimate true-Q error or verify a population identification bound.
+
+### Relation to theoretical error transfer
+
+In the coverage section, $`v=(f,f_y^\circ)`$ indexes fitted critics and their target
+approximants in the declared family $`\mathcal V_n`$, and $`h_v=f-f_y^\circ`$.
+The paper defines
+
+```math
+\begin{aligned}
+e_v&=\|h_v\|_{L^2(\nu_X)},\\
+\upsilon_v&=\left[\int\sup_{\pi\in\Pi_{\mathcal H}(B_{\mathcal H})}
+|h_v\{s,\pi(s)\}|^2\nu_+(ds)\right]^{1/2}.
+\end{aligned}
+```
+
+The supremum is **inside** the state integral. Under the directional-information
+and smooth-evaluation assumptions, spectral transfer gives
+
+```math
+\upsilon_v\le B_{\psi,n}c_n^{-\vartheta/2}
+\|d_v\|^{1-\vartheta}e_v^\vartheta.
+```
+
+The theory's $`\mathbf U_v`$ projects onto the feature span over the full
+domain; its $`\mathbf W_v`$ is a positive spectral weight operator. Neither is
+the empirical feature ridge matrix, and $`\mathbf W_v`$ is not the spline
+curvature matrix $`W_{p_u}`$.
+
+The experimental $`h`$ is one adjacent fitted-critic difference, evaluated at
+one learned policy. It is not the fitted-versus-target $`h_v`$, and $`G_h^2`$ has
+no policy supremum. Thus $`\mathsf{ER}_h`$ describes empirical transfer for this
+one difference; it does not estimate the uniform population coverage constant
+or verify the value theorem's assumptions.

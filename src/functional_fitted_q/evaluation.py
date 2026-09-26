@@ -1,3 +1,10 @@
+"""Monte Carlo returns under fixed evaluation random-number streams.
+
+Raw returns sum gamma**t * R_t over the requested finite horizon; normalized
+returns multiply that sum by 1-gamma. Neither subtracts the training penalty.
+Callers separate tuning/reporting seeds while sharing a stream across policies.
+"""
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -28,6 +35,7 @@ class EvaluationResult:
 def evaluation_randomness(
     master_seed: int, episodes: int, horizon: int
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """Pre-draw common random numbers independent of the evaluated policy."""
     tree = SeedTree(master_seed)
     initial_rng = tree.rng("evaluation_initial_states")
     initial_conditions = np.column_stack(
@@ -92,6 +100,7 @@ def evaluate_policy(
             omega_uniforms[:, time_index],
             config,
         )
+    # For rewards in [0,1], the omitted normalized tail is <= gamma**horizon.
     return EvaluationResult(returns, (1.0 - config.gamma) * returns)
 
 

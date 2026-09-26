@@ -38,6 +38,12 @@ def penalty_matrix(policy, grid, device) -> tuple[torch.Tensor, dict]:
 
 
 def penalized_score(raw, penalty_coefficients, value_max, policy_lambda, matrix):
+    """Score Phi_hat - lambda_{Omega,n}*Omega_hat in raw Q units.
+
+    policy_lambda is already converted from the CLI dimensionless ratio.
+    raw covers the Q-objective subset; penalty_coefficients covers all
+    training next states. Clipping applies to Q before taking its mean.
+    """
     q_mean = raw.clamp(0.0, value_max).mean(dim=-1)
     total_curvature = torch_uncentered_total_curvature(penalty_coefficients, matrix)
     return q_mean - policy_lambda * total_curvature

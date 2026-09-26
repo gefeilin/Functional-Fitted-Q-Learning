@@ -1,3 +1,10 @@
+"""Scalar Pendulum dynamics for one function-valued MDP action.
+
+The within-action coordinate u ranges over [0, 1]; physical time advances by
+config.duration. Reward integrates normalized-time cost before endpoint noise
+is applied. env/batched.py implements the same calculations in batches.
+"""
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -78,6 +85,8 @@ class FunctionalPendulumEnv:
             np.clip(omega, -self.config.omega_limit, self.config.omega_limit)
         )
         running_cost = wrapped**2 + 0.1 * omega_for_cost**2 + 0.001 * torque**2
+        # Chain rule from physical time to u. The cost is already integrated
+        # over u, so it does not receive a second duration factor.
         dtheta = self.config.duration * omega
         domega = self.config.duration * (
             3.0 * self.config.g / (2.0 * self.config.l) * math.sin(theta)

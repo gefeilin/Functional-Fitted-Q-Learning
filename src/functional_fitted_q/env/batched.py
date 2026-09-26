@@ -1,3 +1,10 @@
+"""Vectorized RK4 integration and endpoint noise for complete torque curves.
+
+The first axis indexes states/subjects. An RK4 substep needs left, midpoint,
+and right action values, so L substeps require a shared grid of 2*L+1 points.
+This integration grid is distinct from the stored functional-action grid.
+"""
+
 from __future__ import annotations
 
 import numpy as np
@@ -91,6 +98,8 @@ def apply_transition_noise_batch(
         lower = (-config.omega_limit - omega) / config.sigma_omega
         upper = (config.omega_limit - omega) / config.sigma_omega
         lower_probability = ndtr(lower)
+        # Inverse-CDF sampling gives truncated Gaussian velocity noise.
+        # Clipping an ordinary Gaussian would instead create boundary atoms.
         probability = lower_probability + np.asarray(omega_uniforms) * (
             ndtr(upper) - lower_probability
         )

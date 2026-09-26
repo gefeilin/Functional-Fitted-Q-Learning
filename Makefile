@@ -1,13 +1,22 @@
 PYTHON ?= python
 
-.PHONY: help reproduce verify test notebook smoke plan
+.PHONY: help check quickstart reproduce verify test notebook smoke plan
 
 help:
-	@printf '%s\n' 'reproduce: regenerate paper figures' 'verify: compare with supplied results' 'test: run unit tests' 'notebook: run the analysis notebook' 'smoke: test a small FQI fit and resume' 'plan: list experiment tasks'
+	@printf '%s\n' 'check: test and reproduce the supplied results and notebook' 'quickstart: train and evaluate a small CPU example (requires PyTorch)' 'reproduce: regenerate paper figures' 'verify: regenerate and compare with supplied results' 'test: run unit tests' 'notebook: save an executed analysis notebook under outputs/' 'smoke: test a small FQI fit and resume (requires PyTorch)' 'plan: list experiment tasks'
+
+# Run in order: the notebook also writes figures to outputs/.
+check:
+	$(MAKE) test
+	$(MAKE) verify
+	$(MAKE) notebook
+
+quickstart:
+	$(PYTHON) examples/quickstart_example.py
 
 reproduce:
 	$(PYTHON) scripts/generate_simulation_figures.py
-verify:
+verify: reproduce
 	$(PYTHON) scripts/verify_results.py
 test:
 	$(PYTHON) -m unittest discover -s tests -v

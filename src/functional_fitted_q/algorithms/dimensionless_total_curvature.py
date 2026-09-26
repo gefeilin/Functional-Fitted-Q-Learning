@@ -3,6 +3,11 @@
 The manuscript estimand remains the raw, uncentered state-average of integrated
 second-derivative energy.  Only deterministic, outcome-independent units are
 introduced so that critic value and curvature have comparable numerical scale.
+
+lambda_dimensionless is the paper's lambda_{Omega,n}/s_Omega, not its raw
+curvature multiplier or the theoretical RKHS coefficient lambda_{pi,n}.
+See docs/experiments.md#objective-and-coefficient-units for the conversion
+and the subset/full-state distinction.
 """
 
 from __future__ import annotations
@@ -66,7 +71,7 @@ class DimensionlessTheoryTotalCurvatureCMAES(TheoryTotalCurvatureCMAES):
         tolerance = max(1.0, float(values[-1])) * 1.0e-12
         if float(values[0]) < -tolerance:
             raise RuntimeError("exact curvature matrix is not PSD within roundoff")
-        # Exact R_K is PSD with a two-dimensional linear-function nullspace.
+        # Exact W_pu is PSD with a two-dimensional linear-function nullspace.
         # Project only negative floating-point eigenvalues to zero.
         matrix = (vectors * np.maximum(values, 0.0)) @ vectors.T
         return basis, (matrix + matrix.T) / 2.0
@@ -75,6 +80,7 @@ class DimensionlessTheoryTotalCurvatureCMAES(TheoryTotalCurvatureCMAES):
     def _omega_scale_from_matrix(matrix: np.ndarray) -> float:
         matrix = np.asarray(matrix, dtype=np.float64)
         largest = float(np.linalg.eigvalsh((matrix + matrix.T) / 2.0)[-1])
+        # ||c_C(s)||^2 <= 4*p_u implies curvature <= 4*p_u*lambda_max(W_pu).
         scale = 4.0 * matrix.shape[0] * largest
         if not np.isfinite(scale) or scale <= 0:
             raise RuntimeError("invalid deterministic curvature scale")
@@ -96,6 +102,8 @@ class DimensionlessTheoryTotalCurvatureCMAES(TheoryTotalCurvatureCMAES):
         )
         total_curvature = np.maximum(total_curvature, 0.0)
         omega_scale = self._omega_scale_from_matrix(roughness_operator)
+        # q_mean is Phi_hat_m on the objective subset; total_curvature is
+        # Omega_hat_D on all logged next states, before applying the coefficient.
         objective = (
             q_mean / self.config.q_scale
             - self.config.lambda_dimensionless * total_curvature / omega_scale
@@ -283,6 +291,8 @@ class DimensionlessTheoryTotalCurvatureCMAES(TheoryTotalCurvatureCMAES):
         dimensionless_weighted = (
             self.config.lambda_dimensionless * dimensionless_curvature
         )
+        # Multiplying the dimensionless score by Q_scale gives
+        # Phi_hat_m - lambda_{Omega,n}*Omega_hat_D.
         equivalent_raw_lambda = (
             self.config.lambda_dimensionless * self.config.q_scale / omega_scale
         )

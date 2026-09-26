@@ -1,3 +1,11 @@
+"""Finite-design feature geometry and projections of observed critic differences.
+
+The uncentered empirical second moment and its ridge inverse are diagnostics.
+They do not replace the full-domain projection U_v or spectral weight W_v in
+the coverage theorem. Projection residuals are retained because final-layer
+features need not represent a changing, clipped nonlinear critic exactly.
+"""
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -230,6 +238,11 @@ def ridge_project_secant(
 
 
 def extended_ratio(numerator: float, denominator: float, *, exact_zero: bool) -> float:
+    """Divide without epsilon: positive/zero is infinity; flagged zero/zero is 0.
+
+    The zero convention is numerical bookkeeping, not evidence of coverage.
+    Selected paper fits all have positive actual logged-design denominators.
+    """
     numerator = float(numerator)
     denominator = float(denominator)
     if denominator < 0.0 or not np.isfinite(numerator) or not np.isfinite(denominator):
